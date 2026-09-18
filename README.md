@@ -2,7 +2,7 @@
 
 24 hour hackathon on finance and AI, 18 and 19 September 2026. Case and stack decided on Friday evening.
 
-Case: Viseca "Agent on a Leash" — we build the wallet control layer. The product design and implementation plan is in [docs/implementation-plan.md](docs/implementation-plan.md).
+Case. Viseca "Agent on a Leash". We build the wallet control layer. Team working documents, including the implementation plan, are in [internal/](internal/).
 
 ## Team
 
@@ -23,6 +23,7 @@ exploratory/<name>/  Your own scratch work. One folder per person.
 outputs/             Generated figures and tables.
 pitch/               Slides.
 submission/          Thumbnail and deck. The video and the archive go to the Hack App.
+internal/            Team working documents. Removed before the repository goes public.
 ```
 
 `data/` is tracked in full. `data/raw/` holds the synthetic case data published by Viseca, copied unchanged from github.com/START-Hack/viseca-2026. `data/processed/` holds anything we derive from it.
