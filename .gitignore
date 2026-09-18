@@ -1,14 +1,12 @@
-# Data. Everything under data/ stays local except data/raw/,
-# which holds the public synthetic case data from the partner.
-data/*
+# Data files are ignored everywhere except under data/, which is tracked in full.
+# The case data is synthetic and published by the partner.
 *.csv
 *.parquet
 *.xlsx
 *.pkl
 *.feather
 *.h5
-!data/raw/
-!data/raw/**
+!data/**
 
 # Secrets
 .env
