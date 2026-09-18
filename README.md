@@ -1,6 +1,6 @@
 # START Hack Tour St. Gallen 2026
 
-24 hour hackathon on finance and AI, 18 and 19 September 2026. Case and stack decided on Friday evening.
+24 hour hackathon on finance and AI, 18 and 19 September 2026.
 
 Case. Viseca "Agent on a Leash". We build the wallet control layer. Team working documents, including the implementation plan, are in [internal/](internal/).
 
@@ -20,7 +20,7 @@ tests/               Automated tests.
 scripts/             Pipeline and one-off scripts.
 docs/                Architecture notes and README images.
 exploratory/<name>/  Your own scratch work. One folder per person.
-outputs/             Generated figures and tables.
+outputs/             Generated output. Replay tables in replay/, decision traces in audit/.
 pitch/               Slides.
 submission/          Thumbnail and deck. The video and the archive go to the Hack App.
 internal/            Team working documents. Removed before the repository goes public.
