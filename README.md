@@ -2,6 +2,8 @@
 
 24 hour hackathon on finance and AI, 18 and 19 September 2026. Case and stack decided on Friday evening.
 
+Case: Viseca "Agent on a Leash" — we build the wallet control layer. The product design and implementation plan is in [docs/implementation-plan.md](docs/implementation-plan.md).
+
 ## Team
 
 - Vanessa Burckhardt (ETH Zürich)
