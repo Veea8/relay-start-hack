@@ -1,0 +1,50 @@
+# Data
+data/
+*.csv
+*.parquet
+*.xlsx
+*.pkl
+*.feather
+*.h5
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Submission assets. The thumbnail and the deck belong in the repository,
+# the video and the project archive go to the Hack App instead.
+*.zip
+*.mp4
+*.mov
+
+# Local notes and paperwork
+context/
+admin/
+
+# Python environment and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+build/
+.vite/
+
+# Local tooling config
+.claude/
+CLAUDE.md
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
