@@ -23,4 +23,6 @@ pitch/               Slides.
 submission/          Thumbnail and deck. The video and the archive go to the Hack App.
 ```
 
-Local only, gitignored. `data/` for the case data, `admin/` for paperwork, `context/` for notes.
+`data/raw/` holds the synthetic case data published by Viseca, copied unchanged from github.com/START-Hack/viseca-2026.
+
+Local only, gitignored. The rest of `data/`, `admin/` for paperwork, `context/` for notes.
