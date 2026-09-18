@@ -1,0 +1,264 @@
+--- Row counts match the data guide ---
+merchants    58
+items        66
+customers    20
+accounts     31
+cards        41
+fx_rates      4
+
+--- Merchant categories ---
+merchant_category  merchant_count mcc_codes  countries                                            example_names
+         clothing               5      5651 CH, GB, IT                  Loom and Pine, RainThread, Milano Weave
+        groceries               5      5411     CH, DE         Alpine Basket, Neighbour Pantry, Lakeview Grocer
+      electronics               4      5732     CH, US                PixelHarbor, Circuit and Pine, HarborByte
+           dining               4      5812     CH, DE                 Cedar Table, Basil and Board, Noon Spoon
+   sporting_goods               4      5941 AT, CH, US               TrailSpark, Summit Thread, AlpenWerk Sport
+            books               3      5942     CH, GB CloudShelf Books, BrightPage Learning, London Leaf Books
+        transport               3      4111         CH                    RailNest, MetroHop, LakeLine Mobility
+ home_improvement               3      5211     CH, FR           HomeMend Market, Tool and Timber, Atelier Fixe
+      kids_family               2      5945         CH                            Little Lantern, Growing Steps
+    entertainment               2      7929         CH                                 EventForge, ScreenGarden
+           health               2      5912         CH                        HealthBridge Pharmacy, MotionCare
+            hotel               2      7011     CH, DE                               SummitStay, IsarNest Hotel
+             fuel               2      5541     CH, IT                             RoadPine Energy, Alto Charge
+    food_delivery               2      5812         CH                               MealWing, NightOwl Kitchen
+         software               2      7372     CH, NL                                  WorkCanvas, PlainLedger
+        household               2      5399         CH                                Parcel and Pine, RoomKind
+      photography               2      7221     CH, FR                                   LensTrail, SilverFrame
+         pet_care               2      5995         CH                        Paw and Whisker, Happy Trail Pets
+sustainable_goods               2      5399         CH                              GreenLoop, Repair and Reuse
+    subscriptions               2      5815     CH, GB                        StoryArc Media, NorthTone Digital
+           travel               2      4722     DE, NL                       FlyNorth Europe, EuroTrail Tickets
+  cash_withdrawal               1      6011         CH                                        CashPoint Central
+
+--- Merchant availability values ---
+availability
+online              26
+store_and_online    23
+store                8
+atm                  1
+
+--- Merchants able to bill on a recurring basis, by category ---
+merchant_category  merchant_count                             names
+         pet_care               2 Happy Trail Pets, Paw and Whisker
+         software               2           PlainLedger, WorkCanvas
+    subscriptions               2 NorthTone Digital, StoryArc Media
+
+--- Item categories ---
+   item_category  item_count  lowest_min_chf  highest_max_chf                                                                 example_items
+  sporting_goods           8             8.0            320.0                               Road-running shoes, Running shoes, Hiking boots
+        clothing           7            35.0            280.0      Everyday waterproof jacket, Waterproof work jacket, Waterproof rain coat
+       groceries           7            12.0            180.0                   Fresh produce selection, Pantry staples, Breakfast supplies
+   subscriptions           6             3.0            180.0 Monthly learning subscription, Monthly media subscription, Cloud storage plan
+     electronics           5            10.0            650.0       27-inch computer monitor, Noise-cancelling headphones, Computer monitor
+            fuel           4            10.0            145.0       Fuel purchase, Electric vehicle charging session, Motorway service stop
+          dining           4            15.0            280.0                                    Dinner reservation, Lunch order, Team meal
+           books           4            10.0            140.0        Paperback book order, Professional reference book, Children's book set
+       transport           4             5.0            150.0                  Regional rail ticket, Monthly transit pass, Airport transfer
+home_improvement           4            15.0            480.0                          Wall paint and brushes, Tool set, Shelving materials
+   food_delivery           4            15.0            120.0                        Dinner delivery, Late-shift meal, Family meal delivery
+       household           3            12.0            190.0           Kitchen storage containers, Household essentials, Cleaning supplies
+           hotel           2           130.0            620.0                                           Hotel room, Serviced apartment stay
+       cosmetics           2            10.0            220.0                                  Personal care set, Fragrance and beauty gift
+       gift_card           1            20.0            200.0                                                          Digital gift voucher
+      membership           1            15.0             90.0                                                            Premium membership
+
+--- Item categories with no merchant category of the same name ---
+['cosmetics', 'gift_card', 'membership']
+
+--- Merchant categories with no item category of the same name ---
+['cash_withdrawal', 'entertainment', 'health', 'kids_family', 'pet_care', 'photography', 'software', 'sustainable_goods', 'travel']
+
+--- Customer profiles ---
+CU0001  Alex Meier  (Zurich region)
+  background            Plans household purchases for a family and normally shops once a week.
+  shopping_preferences  Practical groceries, children's essentials, and durable household products; avoids gift vouchers.
+  typical_spending      Regular supermarket visits, public transport, and occasional family meals, mostly during daytime.
+  budget_style          careful
+  travel_pattern        One or two short trips to neighbouring countries each year.
+
+CU0002  Sofia Keller  (Basel region)
+  background            Travels regularly for consulting work and separates travel spending from everyday purchases.
+  shopping_preferences  Flexible hotel bookings near public transport and simple expense documentation.
+  typical_spending      Frequent rail, hotel, and restaurant payments in Switzerland, Germany, and France.
+  budget_style          flexible
+  travel_pattern        Regular business travel in Germany and France.
+
+CU0003  Luca Bernasconi  (Lugano region)
+  background            Spends weekends hiking and climbing, with seasonal trips across the nearby Italian border.
+  shopping_preferences  Repairable outdoor equipment and specialist sports shops rather than fashion purchases.
+  typical_spending      Sports purchases, fuel, casual dining, and periodic EUR transactions in northern Italy.
+  budget_style          balanced
+  travel_pattern        Seasonal leisure travel in Italy.
+
+CU0004  Noor Haddad  (Geneva region)
+  background            Works rotating hospital shifts and often buys meals and essentials outside standard office hours.
+  shopping_preferences  Fast grocery delivery and practical meals after late shifts; avoids energy drinks.
+  typical_spending      Groceries, meal delivery, transport, and pharmacy purchases, including legitimate late-night activity.
+  budget_style          careful
+  travel_pattern        Rarely travels abroad.
+
+CU0005  Emma Roth  (Bern region)
+  background            Studies part-time while working and relies on several digital learning services.
+  shopping_preferences  Books and learning tools with transparent prices; no automatic premium upgrades.
+  typical_spending      Small recurring subscriptions, book purchases, transport, and inexpensive cafés.
+  budget_style          careful
+  travel_pattern        Occasional domestic trips only.
+
+CU0006  Jonas Frei  (Lucerne region)
+  background            Runs and cycles throughout the year and replaces equipment only when needed.
+  shopping_preferences  Technical sports equipment from specialist retailers and products with clear return terms.
+  typical_spending      Frequent modest sports purchases with occasional higher-value shoes or cycling equipment.
+  budget_style          balanced
+  travel_pattern        Weekend trips within Switzerland and Austria.
+
+CU0007  Camille Dubois  (Lausanne region)
+  background            Is gradually renovating an apartment and plans each room as a separate project.
+  shopping_preferences  Simple repairable fittings, neutral colours, and click-and-collect when available.
+  typical_spending      Home-improvement stores, household purchases, transport, and occasional furniture deliveries.
+  budget_style          balanced
+  travel_pattern        Rare short visits to France.
+
+CU0008  Priya Nair  (Zurich region)
+  background            Coordinates purchases for children and an older relative as well as her own household.
+  shopping_preferences  Reliable delivery windows, clearly sized children's items, and familiar pharmacies.
+  typical_spending      Groceries, family supplies, health purchases, and household orders across two cards.
+  budget_style          balanced
+  travel_pattern        One family holiday in Europe each year.
+
+CU0009  Mateo Silva  (Basel region)
+  background            Shares an apartment with two friends and manages a rotating household shopping list.
+  shopping_preferences  Shared essentials in normal pack sizes and receipts that are easy to split.
+  typical_spending      Groceries and household goods from recurring local merchants, plus shared meal deliveries.
+  budget_style          careful
+  travel_pattern        Occasional weekend travel.
+
+CU0010  Lea Baumann  (Winterthur region)
+  background            Works independently as a designer and uses a separate card for business tools and travel.
+  shopping_preferences  Month-to-month software, clear invoices, and no bundled consulting services.
+  typical_spending      Software subscriptions, electronics, cafés, and occasional foreign-currency online services.
+  budget_style          flexible
+  travel_pattern        Several European client trips each year.
+
+CU0011  Daniel Schmid  (St. Gallen region)
+  background            Prefers nearby physical shops and normally pays for everyday items in person.
+  shopping_preferences  Local products, simple receipts, and collection from a store rather than delivery.
+  typical_spending      Daytime in-store groceries, transport, clothing, and occasional restaurant purchases.
+  budget_style          careful
+  travel_pattern        Rarely travels abroad.
+
+CU0012  Giulia Rossi  (Lugano region)
+  background            Uses a phone wallet for most everyday purchases and keeps a separate travel card.
+  shopping_preferences  Mobile receipts, fast checkout, and Italian or Swiss fashion retailers with returns.
+  typical_spending      High mobile-wallet usage for clothing, dining, groceries, and cross-border trips.
+  budget_style          balanced
+  travel_pattern        Regular short trips to Italy.
+
+CU0013  Sami El-Amin  (Neuchatel region)
+  background            Repairs products where possible and chooses refill or second-life options for routine shopping.
+  shopping_preferences  Reusable, refurbished, or repairable items with transparent materials.
+  typical_spending      Groceries, repair services, second-life goods, public transport, and few impulse purchases.
+  budget_style          balanced
+  travel_pattern        Mostly domestic travel.
+
+CU0014  Hannah Weber  (Bern region)
+  background            Attends concerts and festivals in summer but spends little on entertainment during the rest of the year.
+  shopping_preferences  Standard admission from clear ticket sellers; no VIP or resale upgrades.
+  typical_spending      Seasonal clusters of event purchases alongside normal groceries, transport, and dining.
+  budget_style          flexible
+  travel_pattern        Domestic events and occasional German concerts.
+
+CU0015  Tomas Pereira  (Fribourg region)
+  background            Enjoys photography and saves for occasional equipment rather than buying accessories frequently.
+  shopping_preferences  Compatible camera equipment from specialist shops, with a return window and no financing.
+  typical_spending      Mostly modest daily spending interrupted by rare, planned high-value photography purchases.
+  budget_style          planned_high_value
+  travel_pattern        Occasional landscape photography trips.
+
+CU0016  Amina Diallo  (Geneva region)
+  background            Owns a dog and receives repeat deliveries of food and routine care products.
+  shopping_preferences  The usual pet-food formula, dependable delivery, and no unrequested supplement substitutions.
+  typical_spending      Recurring pet-care payments mixed with groceries, transport, health, and park-side cafés.
+  budget_style          balanced
+  travel_pattern        Rarely travels without the dog.
+
+CU0017  Nils Andersson  (Lausanne region)
+  background            Recently moved within Switzerland and is still establishing new local shopping routines.
+  shopping_preferences  Practical household basics and merchants that offer clear delivery dates.
+  typical_spending      A wider-than-usual variety of new grocery, household, transport, and home-improvement merchants.
+  budget_style          balanced
+  travel_pattern        Occasional travel to France and Sweden.
+
+CU0018  Mei Chen  (Zurich region)
+  background            Keeps personal daily spending separate from a shared household account.
+  shopping_preferences  Predictable grocery orders, clearly separated receipts, and household staples in normal quantities.
+  typical_spending      Frequent groceries and transport on one card, with shared household purchases on another account.
+  budget_style          careful
+  travel_pattern        A few European city trips each year.
+
+CU0019  Oliver Graf  (Basel region)
+  background            Researches online purchases carefully and uses a virtual card for web shops.
+  shopping_preferences  Known electronics sellers, clear warranty terms, and no marketplace add-ons.
+  typical_spending      Few online purchases, repeated familiar merchants, and mostly local in-store daily spending.
+  budget_style          careful
+  travel_pattern        Rarely travels abroad.
+
+CU0020  Elif Kaya  (Winterthur region)
+  background            Balances a busy schedule with frequent grocery and prepared-meal deliveries.
+  shopping_preferences  Reliable delivery estimates, saved food preferences, and no automatic membership enrolment.
+  typical_spending      Frequent small ecommerce and mobile-wallet payments, especially food delivery and groceries.
+  budget_style          flexible
+  travel_pattern        Occasional holidays in southern Europe.
+
+--- Budget style values ---
+budget_style
+balanced              8
+careful               7
+flexible              4
+planned_high_value    1
+
+--- Account limits by account type and purpose ---
+account_type  account_purpose  account_count  lowest_per_transaction_limit  highest_per_transaction_limit  lowest_monthly_limit  highest_monthly_limit
+      credit         business              1                        3000.0                         3000.0                8500.0                 8500.0
+      credit   daily_spending              5                        2000.0                         3000.0                6500.0                 8500.0
+      credit           events              1                        3500.0                         3500.0                9500.0                 9500.0
+      credit       renovation              1                        3000.0                         3000.0                8500.0                 8500.0
+      credit           travel              1                        3500.0                         3500.0                9500.0                 9500.0
+       debit   daily_spending             15                        1000.0                         1600.0                4000.0                 5500.0
+       debit           family              1                        1000.0                         1000.0                3600.0                 3600.0
+       debit         pet_care              1                         900.0                          900.0                3200.0                 3200.0
+       debit shared_household              1                         800.0                          800.0                2800.0                 2800.0
+     prepaid           online              2                         900.0                         1000.0                3200.0                 3600.0
+     prepaid           travel              2                         800.0                          800.0                2800.0                 2800.0
+
+--- Account status and base currency values ---
+status  base_currency
+active  CHF              31
+
+--- Card attribute values ---
+card_type: {'debit': 25, 'credit': 12, 'prepaid': 4}
+card_purpose: {'everyday': 20, 'mobile_and_online': 10, 'travel': 3, 'online': 2, 'renovation': 1, 'family': 1, 'business': 1, 'events': 1, 'pet_care': 1, 'shared_household': 1}
+status: {'active': 39, 'blocked': 1, 'expired': 1}
+online_enabled: {'true': 41}
+international_enabled: {'true': 32, 'false': 9}
+virtual_card: {'false': 28, 'true': 13}
+
+--- Cards that are not active, or that forbid online or international use ---
+card_id account_id card_type      card_purpose  status first_used_on expires_on online_enabled international_enabled virtual_card customer_id
+ CA0007     AC0006     debit          everyday  active    2024-05-06 2029-05-01           true                 false        false      CU0004
+ CA0008     AC0007     debit          everyday  active    2024-06-07 2029-06-01           true                 false        false      CU0005
+ CA0009     AC0007     debit mobile_and_online blocked    2025-07-06 2030-07-01           true                 false         true      CU0005
+ CA0022     AC0017     debit          everyday  active    2024-01-13 2029-01-01           true                 false        false      CU0011
+ CA0025     AC0020     debit          everyday  active    2024-03-15 2029-03-01           true                 false        false      CU0013
+ CA0026     AC0020     debit mobile_and_online expired    2025-05-14 2026-04-01           true                 false         true      CU0013
+ CA0032     AC0024     debit          everyday  active    2024-06-18 2029-06-01           true                 false        false      CU0016
+ CA0033     AC0025     debit          pet_care  active    2025-06-17 2030-06-01           true                 false        false      CU0016
+ CA0038     AC0029     debit          everyday  active    2024-09-21 2029-09-01           true                 false        false      CU0019
+
+--- Fixed exchange rates ---
+from_currency to_currency     rate  rate_date          source
+          CHF         CHF 1.000000 2026-08-01 synthetic_fixed
+          EUR         CHF 0.950000 2026-08-01 synthetic_fixed
+          GBP         CHF 1.120000 2026-08-01 synthetic_fixed
+          USD         CHF 0.870000 2026-08-01 synthetic_fixed
+
