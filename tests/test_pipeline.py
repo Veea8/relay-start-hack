@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 from app.engine.guards.base import PlaceholderGuard
-from app.engine.guards.registry import build_guard_pipeline, list_placeholder_guard_ids
+from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
+from app.engine.guards.registry import build_guard_pipeline, get_default_guard_pipeline, list_placeholder_guard_ids
 from app.engine.pipeline import decide
 from app.models.decision import (
     ENGINE_VERSION,
@@ -80,6 +81,13 @@ EXPECTED_GUARDS_BY_NUMBER = {
 IDENTIFIER_WORDS = ("scenario_id", "request_id", "source_authorization_id", "replay_order")
 NEVER_ALLOWED_WORD = "replay_order"
 ONLY_ALLOWED_FUNCTION_START = "def collect_trace_identifiers(event):"
+
+
+
+# State an instruction with a clear limit that the CHF 20 of the example message meets exactly,
+# and the one guard that is built and therefore answers PASS instead of SKIP
+CLEAR_LIMIT_INSTRUCTION = "Buy one grocery item for CHF 20 or less."
+BUILT_GUARD_ID = "per_order_limit"
 
 
 
@@ -189,16 +197,17 @@ def build_fixed_clock(fixed_moment):
 
 
 
-# Read the example message as a typed event, with the uncertainty policy a test asks for
-def read_example_event(example_message, uncertainty_policy = "ask"):
+# Read the example message as a typed event, with the uncertainty policy and the instruction a test asks for
+def read_example_event(example_message, uncertainty_policy = "ask", instruction = CLEAR_LIMIT_INSTRUCTION):
     example_message["mandate"]["uncertainty_policy"] = uncertainty_policy
+    example_message["mandate"]["instruction"] = instruction
     return read_purchase_message(example_message)
 
 
 
-# Decide the example message with the given guards
-def decide_example(example_message, guards = None, uncertainty_policy = "ask", read_clock = None):
-    event = read_example_event(example_message, uncertainty_policy)
+# Decide the example message with the given guards, under an instruction with a clear limit unless a test hands in another one
+def decide_example(example_message, guards = None, uncertainty_policy = "ask", read_clock = None, instruction = CLEAR_LIMIT_INSTRUCTION):
+    event = read_example_event(example_message, uncertainty_policy, instruction)
     policy = build_policy_from_mandate(event.mandate)
     return decide(event, policy, None, guards = guards, read_clock = read_clock)
 
@@ -227,8 +236,8 @@ def dump_trace_without_running_times(decision_trace):
 
 #### Step 3: Check the default pipeline ####
 
-# Check that the example message is approved by 23 placeholder guards in the stated order
-def test_default_pipeline_approves_with_23_skipped_guards(example_message):
+# Check that the example message is approved by 22 placeholder guards and the one built guard, in the stated order
+def test_default_pipeline_approves_with_22_skipped_guards_and_one_pass(example_message):
     decision_trace = decide_example(example_message)
     assert decision_trace.decision == Decision.APPROVE
     assert decision_trace.reason_codes == []
@@ -237,10 +246,35 @@ def test_default_pipeline_approves_with_23_skipped_guards(example_message):
     assert len(decision_trace.guards) == 23
     assert [guard_result.guard_number for guard_result in decision_trace.guards] == EXPECTED_EXECUTION_ORDER
     assert sorted(guard_result.guard_number for guard_result in decision_trace.guards) == list(range(1, 24))
-    assert {guard_result.verdict for guard_result in decision_trace.guards} == {GuardVerdict.SKIP}
-    assert {guard_result.reason_code for guard_result in decision_trace.guards} == {ReasonCode.GUARD_NOT_BUILT}
-    assert all(guard_result.evidence == [] and guard_result.customer_message is None for guard_result in decision_trace.guards)
     assert all(guard_result.elapsed_ms >= 0 for guard_result in decision_trace.guards)
+
+    # Expect SKIP with the reason that the guard is not built from the 22 placeholders, without evidence and without a message
+    placeholder_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id != BUILT_GUARD_ID]
+    assert len(placeholder_results) == 22
+    assert {guard_result.verdict for guard_result in placeholder_results} == {GuardVerdict.SKIP}
+    assert {guard_result.reason_code for guard_result in placeholder_results} == {ReasonCode.GUARD_NOT_BUILT}
+    assert all(guard_result.evidence == [] and guard_result.customer_message is None for guard_result in placeholder_results)
+
+    # Expect PASS from the limit per order, because CHF 20 meets a limit of CHF 20 or less
+    built_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id == BUILT_GUARD_ID]
+    assert len(built_results) == 1
+    assert built_results[0].verdict == GuardVerdict.PASS
+    assert built_results[0].reason_code is None
+    assert len(built_results[0].evidence) == 1
+    assert built_results[0].customer_message is None
+
+
+
+# Check that the unchanged example message, which speaks of a stated limit and states none, asks the customer
+def test_unchanged_example_message_asks_about_the_unclear_limit(example_message):
+    unchanged_instruction = example_message["mandate"]["instruction"]
+    assert unchanged_instruction == "Buy one requested item within my stated limit. Ask me when uncertain."
+    decision_trace = decide_example(example_message, instruction = unchanged_instruction)
+    assert decision_trace.decision == Decision.STEP_UP
+    assert decision_trace.reason_codes == [ReasonCode.ORDER_LIMIT_UNCLEAR]
+    assert decision_trace.aggregation.raised_by == [BUILT_GUARD_ID]
+    assert decision_trace.aggregation.uncertainty_policy_applied is True
+    assert "CHF 20.00" in decision_trace.customer_message
 
 
 
@@ -255,13 +289,33 @@ def test_every_guard_has_its_id_and_its_family(example_message):
 
 
 
-# Check that the registry reports all 23 guards as placeholders
-def test_registry_lists_all_guards_as_placeholders():
+# Check that the registry builds 22 placeholders and the one built guard, as a tuple in execution order
+def test_registry_lists_22_placeholders_and_one_built_guard():
     guards = build_guard_pipeline()
+    assert isinstance(guards, tuple)
     assert len(guards) == 23
-    assert all(isinstance(guard, PlaceholderGuard) for guard in guards)
-    assert list_placeholder_guard_ids(guards) == [EXPECTED_GUARDS_BY_NUMBER[guard_number][0] for guard_number in EXPECTED_EXECUTION_ORDER]
+    assert [guard.guard_number for guard in guards] == EXPECTED_EXECUTION_ORDER
+    built_guards = [guard for guard in guards if not isinstance(guard, PlaceholderGuard)]
+    assert len(built_guards) == 1
+    assert isinstance(built_guards[0], PerOrderLimitGuard)
+    assert (built_guards[0].guard_number, built_guards[0].guard_id, built_guards[0].family) == (3, BUILT_GUARD_ID, GuardFamily.SPENDING_LIMITS)
+    assert list_placeholder_guard_ids(guards) == [
+        EXPECTED_GUARDS_BY_NUMBER[guard_number][0]
+        for guard_number in EXPECTED_EXECUTION_ORDER
+        if EXPECTED_GUARDS_BY_NUMBER[guard_number][0] != BUILT_GUARD_ID
+    ]
+    assert len(list_placeholder_guard_ids(guards)) == 22
     assert list_placeholder_guard_ids([FixedVerdictGuard(1, "stub_pass", GuardVerdict.PASS)]) == []
+
+
+
+# Check that the default pipeline is built once per process, so every decision runs the same guard objects
+def test_default_pipeline_is_the_same_object_twice():
+    first_pipeline = get_default_guard_pipeline()
+    second_pipeline = get_default_guard_pipeline()
+    assert first_pipeline is second_pipeline
+    assert isinstance(first_pipeline, tuple)
+    assert len(first_pipeline) == 23
 
 
 

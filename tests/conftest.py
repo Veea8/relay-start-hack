@@ -4,11 +4,18 @@
 # Date: September 2026
 
 import json
+import os
 import sys
 from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+
+
+
+# Pin the tolerance share the expected figures rest on, before anything reads the settings.
+# An environment variable wins over a local .env file, so no local setting can change a test result.
+os.environ["OVERSHOOT_TOLERANCE_SHARE"] = "0.10"
 
 
 

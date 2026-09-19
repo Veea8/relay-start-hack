@@ -8,8 +8,9 @@ from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 
 from app.engine.aggregate import aggregate
+from app.engine.facts import build_fact_sheet
 from app.engine.guards.base import DecisionInput
-from app.engine.guards.registry import build_guard_pipeline
+from app.engine.guards.registry import get_default_guard_pipeline
 from app.models.decision import (
     DecisionTrace,
     EvidenceItem,
@@ -154,9 +155,9 @@ def run_one_guard(guard, decision_input, earlier_results):
 # The clock is read for the received and decided moments, the margin and the timings only, and no guard sees it.
 def decide(event, policy, state, guards = None, read_clock = None):
 
-    # Fall back to the full pipeline and the real clock
+    # Fall back to the full pipeline, which is built once per process, and to the real clock
     if guards is None:
-        guards = build_guard_pipeline()
+        guards = get_default_guard_pipeline()
     if read_clock is None:
         read_clock = read_utc_clock
     guard_ids = [guard.guard_id for guard in guards]
@@ -167,7 +168,13 @@ def decide(event, policy, state, guards = None, read_clock = None):
     # Note when the purchase arrived and start the timer of the whole decision
     received_at = read_clock()
     decision_started_at = time.perf_counter()
-    decision_input = DecisionInput(event = event, policy = policy, state = state)
+
+
+
+    # Build the fact sheet once and hand it to every guard, so all guards compare the same exact decimals.
+    # A message whose facts cannot be built raises here, and the exception leaves this function unchanged.
+    fact_sheet = build_fact_sheet(event)
+    decision_input = DecisionInput(event = event, policy = policy, facts = fact_sheet, state = state)
 
 
 

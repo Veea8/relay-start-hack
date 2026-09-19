@@ -3,6 +3,8 @@
 # Author: Andrés Gallardo
 # Date: September 2026
 
+from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -67,3 +69,24 @@ class Settings(BaseSettings):
     # Choose what happens when a one-time goal was already bought, and when merchant text tries to instruct the agent
     goal_fulfilled_action: Literal["off", "note", "step_up"] = "note"
     injection_action: Literal["step_up", "decline"] = "step_up"
+
+
+
+    # Set how far above a limit a purchase may be, as a share of the limit, and still be put to the customer.
+    # A larger overshoot declines, and a share of zero declines every overshoot.
+    overshoot_tolerance_share: Decimal = Field(default = Decimal("0.10"), ge = 0, le = 1)
+
+
+
+
+
+
+
+
+
+#### Step 3: Share the settings ####
+
+# Build the settings on the first call and hand back the same object for the rest of the process
+@lru_cache(maxsize = None)
+def get_settings():
+    return Settings()

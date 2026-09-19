@@ -60,6 +60,13 @@ class Expectations(FrozenPolicyModel):
 
 
 
+    # Keep how the limit per order was read, where an exclusive limit means the instruction asked to stay under it.
+    # The reading is not_stated when the instruction names no limit, read when one was found and unclear when something limit-like could not be read.
+    per_order_limit_inclusive: bool = True
+    per_order_limit_reading: Literal["not_stated", "read", "unclear"] = "not_stated"
+
+
+
     # Keep the allowed and the prohibited categories and the requested item
     allowed_item_categories: tuple[str, ...] = ()
     prohibited_item_categories: tuple[str, ...] = ()

@@ -49,8 +49,9 @@ CountryCode = Annotated[str, Field(pattern = r"^[A-Z]{2}$")]
 
 
 
-# Allow a rule value to be a whole number, a number, a text or a list of texts, and nothing else
-RuleValue = Union[int, float, str, list[str]]
+# Allow a rule value to be a whole number, a number, a text or a list of texts, and nothing else.
+# The list of texts arrives as a tuple, so a rule value cannot be changed either.
+RuleValue = Union[int, float, str, tuple[str, ...]]
 
 
 
@@ -62,13 +63,15 @@ RuleValue = Union[int, float, str, list[str]]
 
 #### Step 2: Define the strict base model ####
 
-# Refuse type conversion, unknown fields and the non-finite numbers NaN and Infinity on every model
+# Refuse type conversion, unknown fields and the non-finite numbers NaN and Infinity on every model.
+# Refuse any change after creation as well, so nothing that reads a message can alter it.
 class StrictEventModel(BaseModel):
 
     model_config = ConfigDict(
         strict = True,
         extra = "forbid",
         allow_inf_nan = False,
+        frozen = True,
     )
 
 
@@ -155,9 +158,9 @@ class Authorization(StrictEventModel):
 
 
 
-    # Keep the description and the cart, which holds at least one line
+    # Keep the description and the cart, which holds at least one line and is a tuple so it cannot grow or shrink
     purchase_description: NonEmptyText
-    items: Annotated[list[CartItem], Field(min_length = 1)]
+    items: Annotated[tuple[CartItem, ...], Field(min_length = 1)]
 
 
 
@@ -185,7 +188,7 @@ class Mandate(StrictEventModel):
     customer_id: NonEmptyText
     card_id: NonEmptyText
     instruction: NonEmptyText
-    hard_rules: list[MandateRule]
+    hard_rules: tuple[MandateRule, ...]
     uncertainty_policy: Literal["ask", "decline", "approve"]
     profile_id: NonEmptyText
 
@@ -206,7 +209,7 @@ class RecentAuthorization(StrictEventModel):
 class EventContext(StrictEventModel):
 
     approved_spend_in_period_chf: Optional[AmountFromZero]
-    recent_authorizations: list[RecentAuthorization]
+    recent_authorizations: tuple[RecentAuthorization, ...]
 
 
 

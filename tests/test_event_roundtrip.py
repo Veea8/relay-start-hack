@@ -8,6 +8,7 @@ import json
 from dataclasses import dataclass
 
 import pytest
+from pydantic import ValidationError
 
 from app.models.events import AuthorizationEvent, InvalidEventError, read_purchase_message
 
@@ -118,9 +119,33 @@ def test_example_message_parses(example_message_text):
     assert event.authorization.related_authorization_id is None
     assert event.authorization.related_authorization_status is None
     assert len(event.authorization.items) == 1
-    assert event.mandate.hard_rules == []
+    assert event.mandate.hard_rules == ()
     assert event.deadline_at.tzinfo is not None
     assert event.deadline_at.utcoffset() is not None
+
+
+
+# Check that a parsed event cannot be changed, at the top level and inside its parts
+def test_assigning_to_a_parsed_event_raises(example_message_text):
+    event = read_purchase_message(example_message_text)
+
+    with pytest.raises(ValidationError):
+        event.request_id = "req_changed"
+    with pytest.raises(ValidationError):
+        event.authorization.billing_amount_chf = 1.0
+    with pytest.raises(ValidationError):
+        event.mandate.instruction = "Buy anything."
+    assert event.authorization.billing_amount_chf == 20.0
+
+
+
+# Check that the cart, the rules and the recent purchases arrive as tuples, which cannot grow or shrink
+def test_lists_of_the_message_arrive_as_tuples(example_message_text):
+    event = read_purchase_message(example_message_text)
+
+    assert isinstance(event.authorization.items, tuple)
+    assert isinstance(event.mandate.hard_rules, tuple)
+    assert isinstance(event.context.recent_authorizations, tuple)
 
 
 
@@ -372,6 +397,15 @@ def test_missing_optional_rule_fields_become_none(example_message):
     assert rule.period_days is None
     assert rule.value == 200
     assert isinstance(rule.value, int)
+
+
+
+# Check that a rule value written as a list of texts arrives as a tuple, which cannot be changed
+def test_list_of_texts_in_a_rule_arrives_as_a_tuple(example_message):
+    example_message["mandate"]["hard_rules"] = [{**PLAIN_RULE, "operator": "in", "value": ["groceries", "household"]}]
+    event = read_purchase_message(example_message)
+
+    assert event.mandate.hard_rules[0].value == ("groceries", "household")
 
 
 

@@ -311,15 +311,28 @@ def test_engine_decides_when_no_baseline_is_named():
 
 
 
-# Check that the engine approves all 45 purchases while every guard is still a placeholder
-def test_engine_approves_everything_while_no_guard_is_built(results_with_engine):
+# Check that the engine asks about the three small overshoots of an order limit, declines the three large ones and approves the rest
+def test_engine_asks_and_declines_on_the_order_limit(results_with_engine):
     result_table = replay.build_result_table(results_with_engine)
+    summary = replay.summarize_replay(result_table)
     assert len(result_table) == 45
-    assert list_sources_with_decision(result_table, "approve") == sorted(result_table["source_authorization_id"])
-    assert (result_table["final_status"] == "approved").all()
-    assert result_table["reason_codes"].tolist() == [[]] * 45
+    assert len(list_sources_with_decision(result_table, "approve")) == 39
+    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0021", "AU0034"]
+    assert list_sources_with_decision(result_table, "decline") == ["AU0010", "AU0037", "AU0041"]
     assert "trace" not in result_table.columns
-    assert replay.count_guards_not_built() == (23, 23)
+    assert replay.count_guards_not_built() == (22, 23)
+
+    # Expect the reason of each decision, and no reason on an approval
+    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 39
+    assert result_table.query("decision == 'step_up'")["reason_codes"].tolist() == [["SMALL_OVERSHOOT"]] * 3
+    assert result_table.query("decision == 'decline'")["reason_codes"].tolist() == [["OVER_PER_ORDER_LIMIT"]] * 3
+
+    # Expect an unanswered question to stay pending, so its amount counts as not approved
+    assert (result_table.query("decision == 'approve'")["final_status"] == "approved").all()
+    assert (result_table.query("decision == 'step_up'")["final_status"] == "pending").all()
+    assert (result_table.query("decision == 'decline'")["final_status"] == "declined").all()
+    assert summary["total_approved_chf"] == Decimal("7199.73")
+    assert summary["total_declined_or_pending_chf"] == Decimal("1726.00")
 
 
 
@@ -435,11 +448,11 @@ def test_comparison_counts_the_matches_of_both_baselines(results_without_control
 
 
 
-# Check that the engine matches 17 of 45 reference decisions while it approves everything
+# Check that the engine matches 23 of 45 reference decisions with the limit per order as its only built guard
 def test_comparison_counts_the_matches_of_the_engine(results_with_engine):
     compared_with_engine = replay.compare_with_reference_decisions(replay.build_result_table(results_with_engine))
     assert len(compared_with_engine) == 45
-    assert int((compared_with_engine["decision_match"] == "match").sum()) == 17
+    assert int((compared_with_engine["decision_match"] == "match").sum()) == 23
 
 
 
@@ -485,7 +498,9 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     result_table = replay.main(["--scenario", "SCEN0001", "--compare"], output_folder = tmp_path)
     written_names = sorted(written_path.name for written_path in tmp_path.iterdir())
     assert len(result_table) == 10
-    assert (result_table["decision"] == "approve").all()
+    assert len(list_sources_with_decision(result_table, "approve")) == 8
+    assert list_sources_with_decision(result_table, "step_up") == ["AU0004"]
+    assert list_sources_with_decision(result_table, "decline") == ["AU0010"]
     assert len(written_names) == 2
     assert written_names[0].startswith("SCEN0001_engine_") and written_names[0].endswith(".jsonl")
     assert written_names[1].startswith("SCEN0001_engine_") and written_names[1].endswith(".md")
@@ -498,6 +513,6 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     # Expect the line about the guards in the printed summary and in the markdown report, and no trace column in the report
     printed_summary = capsys.readouterr().out
     markdown_report = (tmp_path / written_names[1]).read_text(encoding = "utf-8")
-    assert "Guards not built yet - 23 of 23" in printed_summary
-    assert "Guards not built yet - 23 of 23" in markdown_report
+    assert "Guards not built yet - 22 of 23" in printed_summary
+    assert "Guards not built yet - 22 of 23" in markdown_report
     assert "trace_version" not in markdown_report

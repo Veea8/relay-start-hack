@@ -1,11 +1,12 @@
 # Script: base.py
-# Purpose: Define what every guard receives, what every guard must offer and the placeholder for a guard without logic
+# Purpose: Define what every guard receives, what every guard must offer, how a guard builds its result and the placeholder for a guard without logic
 # Author: Andrés Gallardo
 # Date: September 2026
 
 from dataclasses import dataclass
 from typing import Any, Mapping, Protocol
 
+from app.engine.facts import FactSheet
 from app.models.decision import GuardFamily, GuardResult, GuardVerdict, ReasonCode
 from app.models.events import AuthorizationEvent
 from app.models.policy import InternalPolicy
@@ -20,11 +21,13 @@ from app.models.policy import InternalPolicy
 
 #### Step 1: Define the input of a decision ####
 
-# Hold everything a guard may look at, where state is an opaque value that nothing reads yet
+# Hold everything a guard may look at, where facts carries the amounts as exact decimals
+# and state is an opaque value that nothing reads yet
 @dataclass(frozen = True)
 class DecisionInput:
     event: AuthorizationEvent
     policy: InternalPolicy
+    facts: FactSheet
     state: Any = None
 
 
@@ -57,7 +60,31 @@ class Guard(Protocol):
 
 
 
-#### Step 3: Define the placeholder for a guard without logic ####
+#### Step 3: Build the result of a guard ####
+
+# Build a result under the number, the id and the family of the guard, so no guard has to repeat them
+def build_guard_result(guard, verdict, reason_code = None, evidence = (), signal = None, note = None, customer_message = None):
+    return GuardResult(
+        guard_number = guard.guard_number,
+        guard_id = guard.guard_id,
+        family = guard.family,
+        verdict = verdict,
+        reason_code = reason_code,
+        evidence = list(evidence),
+        signal = signal,
+        note = note,
+        customer_message = customer_message,
+    )
+
+
+
+
+
+
+
+
+
+#### Step 4: Define the placeholder for a guard without logic ####
 
 # Stand in for a guard that is not built yet, which answers SKIP and therefore never changes a decision
 @dataclass(frozen = True)
@@ -68,10 +95,4 @@ class PlaceholderGuard:
 
     # Answer SKIP with the reason that the guard is not built, without evidence and without a message
     def check(self, decision_input, earlier_results):
-        return GuardResult(
-            guard_number = self.guard_number,
-            guard_id = self.guard_id,
-            family = self.family,
-            verdict = GuardVerdict.SKIP,
-            reason_code = ReasonCode.GUARD_NOT_BUILT,
-        )
+        return build_guard_result(self, GuardVerdict.SKIP, reason_code = ReasonCode.GUARD_NOT_BUILT)

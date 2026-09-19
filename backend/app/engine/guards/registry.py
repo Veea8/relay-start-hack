@@ -4,8 +4,10 @@
 # Date: September 2026
 
 from dataclasses import dataclass
+from functools import lru_cache
 
 from app.engine.guards.base import PlaceholderGuard
+from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.models.decision import GuardFamily
 
 
@@ -67,6 +69,13 @@ EXECUTION_ORDER = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 22, 14, 15, 16, 17
 
 
 
+# Map the id of every guard that is built to its class, where a guard missing here is still a placeholder
+BUILT_GUARD_CLASSES_BY_ID = {
+    "per_order_limit": PerOrderLimitGuard,
+}
+
+
+
 
 
 
@@ -75,7 +84,7 @@ EXECUTION_ORDER = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 22, 14, 15, 16, 17
 
 #### Step 2: Build the pipeline ####
 
-# Build the 23 guards in execution order, where every guard is still a placeholder
+# Build the 23 guards in execution order as a tuple, the real guard where one exists and a placeholder otherwise
 def build_guard_pipeline():
 
     # Check the table, which must hold 23 guards with the numbers 1 to 23 and no id twice
@@ -88,16 +97,36 @@ def build_guard_pipeline():
 
 
 
+    # Check that every built guard belongs to a row of the table
+    unknown_built_guard_ids = sorted(set(BUILT_GUARD_CLASSES_BY_ID) - set(guard_ids))
+    assert unknown_built_guard_ids == [], "A built guard has no table row - " + ", ".join(unknown_built_guard_ids)
+
+
+
     # Build one guard per table row and put the guards in execution order
     table_rows_by_number = {table_row.guard_number: table_row for table_row in GUARD_TABLE}
-    return [
-        PlaceholderGuard(
-            guard_number = table_rows_by_number[guard_number].guard_number,
-            guard_id = table_rows_by_number[guard_number].guard_id,
-            family = table_rows_by_number[guard_number].family,
-        )
+    return tuple(
+        build_one_guard(table_rows_by_number[guard_number])
         for guard_number in EXECUTION_ORDER
-    ]
+    )
+
+
+
+# Build the guard of one table row, with the real class where one exists, so both kinds take their identity from the same row
+def build_one_guard(table_row):
+    guard_class = BUILT_GUARD_CLASSES_BY_ID.get(table_row.guard_id, PlaceholderGuard)
+    return guard_class(
+        guard_number = table_row.guard_number,
+        guard_id = table_row.guard_id,
+        family = table_row.family,
+    )
+
+
+
+# Build the pipeline on the first call and hand back the same tuple for the rest of the process
+@lru_cache(maxsize = None)
+def get_default_guard_pipeline():
+    return build_guard_pipeline()
 
 
 
