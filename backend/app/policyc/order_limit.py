@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
+from app.policyc.instruction_text import build_alternation_pattern, build_alternation_text, find_clause_break_spans, read_negated_limit_kind, spans_overlap
+
 
 
 
@@ -92,29 +94,6 @@ LIMIT_WORDS = (
 
 #### Step 2: Build the patterns ####
 
-# Build the pattern of one phrase, where any whitespace may separate its words.
-# A word boundary guards each end that is a letter or a digit, so "under" is not found inside "understand".
-def build_phrase_pattern_text(phrase):
-    escaped_phrase = "\\s+".join(re.escape(word) for word in phrase.split(" "))
-    leading_boundary = "\\b" if phrase[0].isalnum() else ""
-    trailing_boundary = "\\b" if phrase[-1].isalnum() else ""
-    return leading_boundary + escaped_phrase + trailing_boundary
-
-
-
-# Build the pattern text that finds any of the phrases, longest first, so "swiss francs" wins over "francs"
-def build_alternation_text(phrases):
-    phrases_longest_first = sorted(phrases, key = len, reverse = True)
-    return "(?:" + "|".join(build_phrase_pattern_text(phrase) for phrase in phrases_longest_first) + ")"
-
-
-
-# Build the compiled pattern that finds any of the phrases in upper or lower case
-def build_alternation_pattern(phrases):
-    return re.compile(build_alternation_text(phrases), re.IGNORECASE)
-
-
-
 # Describe a number with an optional thousands separator, which is a comma, an apostrophe or a typographic apostrophe,
 # and with at most two decimals. A number that runs on into more digits is not readable and is not matched at all.
 THOUSANDS_SEPARATORS = (",", "'", "’")
@@ -134,13 +113,6 @@ CURRENCY_PATTERN = re.compile(CURRENCY_TEXT, re.IGNORECASE)
 
 
 
-# Find the places where one clause ends, which are sentence punctuation, a comma with a space and the words "and" and "but".
-# A comma takes a following "and" or "but" with it, so no clause starts with that word.
-# The word "or" never ends a clause, because "CHF 20 or less" has to stay together.
-CLAUSE_BREAK_PATTERN = re.compile("[.!?;:](?=\\s|$)|,\\s+(?:(?:and|but)\\s+)?|\\s+and\\s+|\\s+but\\s+", re.IGNORECASE)
-
-
-
 # Check the inclusive words first, then the exclusive ones, then the lower ones,
 # because "at or below" contains "below" and "no more than" contains "more than"
 UPPER_BOUND_PATTERNS_IN_ORDER = (
@@ -148,6 +120,11 @@ UPPER_BOUND_PATTERNS_IN_ORDER = (
     ("exclusive_upper", build_alternation_pattern(EXCLUSIVE_UPPER_BOUND_PHRASES)),
 )
 LOWER_BOUND_PATTERN = build_alternation_pattern(LOWER_BOUND_PHRASES)
+
+
+
+# Map what a negated limit phrase says about an amount to the bound it gives
+NEGATED_LIMIT_BOUND_BY_KIND = {"upper": "inclusive_upper", "lower": "lower"}
 
 
 
@@ -224,12 +201,6 @@ def read_first_matching_label(clause, labeled_patterns_in_order):
 
 
 
-# Report whether two spans of text overlap
-def spans_overlap(first_span, second_span):
-    return first_span[0] < second_span[1] and second_span[0] < first_span[1]
-
-
-
 # Turn the text of a number into an exact decimal, without its thousands separators
 def read_number_text(number_text):
     digits_and_point = "".join(character for character in number_text if character not in THOUSANDS_SEPARATORS)
@@ -237,9 +208,13 @@ def read_number_text(number_text):
 
 
 
-# Read the bound of one amount from its clause, the upper bounds first and the lower bounds last.
-# The words "over" and "above" count only when they stand directly before the amount.
+# Read the bound of one amount from its clause, a negated limit phrase first, then the upper bounds and the lower bounds last.
+# A negation turns the comparison around, so "don't go over" caps the amount and "no less than" sets a minimum.
+# The words "over" and "above" without a negation count only when they stand directly before the amount.
 def read_bound(clause, clause_text_before_amount):
+    negated_limit_kind = read_negated_limit_kind(clause)
+    if negated_limit_kind is not None:
+        return NEGATED_LIMIT_BOUND_BY_KIND[negated_limit_kind]
     upper_bound = read_first_matching_label(clause, UPPER_BOUND_PATTERNS_IN_ORDER)
     if upper_bound is not None:
         return upper_bound
@@ -278,11 +253,7 @@ def find_instruction_amounts(instruction):
     amount_spans = tuple(amount_match.span() for amount_match in amount_matches)
 
     # Keep a clause break only outside every amount, so neither the point in "Fr. 50" nor a comma in a number splits
-    clause_break_spans = tuple(
-        break_match.span()
-        for break_match in CLAUSE_BREAK_PATTERN.finditer(instruction)
-        if not any(spans_overlap(break_match.span(), amount_span) for amount_span in amount_spans)
-    )
+    clause_break_spans = find_clause_break_spans(instruction, protected_spans = amount_spans)
     instruction_amounts = tuple(
         build_instruction_amount(instruction, amount_match, clause_break_spans)
         for amount_match in amount_matches

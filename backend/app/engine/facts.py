@@ -1,10 +1,11 @@
 # Script: facts.py
-# Purpose: Turn the amounts of one purchase message into exact decimals that every guard can compare safely
+# Purpose: Turn the amounts and the cart lines of one purchase message into exact decimals that every guard can compare safely
 # Author: Andrés Gallardo
 # Date: September 2026
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal
+from typing import Tuple
 
 
 
@@ -36,7 +37,21 @@ def to_money(value):
 
 #### Step 2: Define the fact sheet ####
 
-# Hold the amounts of one purchase as exact decimals, together with the currency of the purchase.
+# Hold one line of the cart, where unit_price and line_total are in the currency of the line and line_total is unit_price times quantity.
+# The name is written by the shop and is kept for display only. No identifier is kept, so no guard can decide on one.
+@dataclass(frozen = True)
+class LineFact:
+    line_no: int
+    item_name: str
+    item_category: str
+    quantity: int
+    unit_price: Decimal
+    currency: str
+    line_total: Decimal
+
+
+
+# Hold the amounts of one purchase as exact decimals, together with the currency of the purchase and the lines of the cart.
 # billing_amount_chf is the amount in Swiss francs, while amount, items_subtotal and delivery_fee are in the purchase currency.
 @dataclass(frozen = True)
 class FactSheet:
@@ -45,6 +60,7 @@ class FactSheet:
     items_subtotal: Decimal
     delivery_fee: Decimal
     currency: str
+    lines: Tuple[LineFact, ...]
 
 
 
@@ -56,7 +72,22 @@ class FactSheet:
 
 #### Step 3: Build the fact sheet of one purchase ####
 
-# Read the amounts of the purchase and nothing else, so the fact sheet depends on no clock and on no identifier
+# Read one line of the cart, and multiply the exact unit price by the quantity
+def build_line_fact(cart_item):
+    unit_price = to_money(cart_item.unit_price)
+    return LineFact(
+        line_no = cart_item.line_no,
+        item_name = cart_item.item_name,
+        item_category = cart_item.item_category,
+        quantity = cart_item.quantity,
+        unit_price = unit_price,
+        currency = cart_item.currency,
+        line_total = to_money(unit_price * cart_item.quantity),
+    )
+
+
+
+# Read the amounts and the cart lines of the purchase and nothing else, so the fact sheet depends on no clock and on no identifier
 def build_fact_sheet(event):
     return FactSheet(
         billing_amount_chf = to_money(event.authorization.billing_amount_chf),
@@ -64,4 +95,5 @@ def build_fact_sheet(event):
         items_subtotal = to_money(event.authorization.items_subtotal),
         delivery_fee = to_money(event.authorization.delivery_fee),
         currency = event.authorization.currency,
+        lines = tuple(build_line_fact(cart_item) for cart_item in event.authorization.items),
     )

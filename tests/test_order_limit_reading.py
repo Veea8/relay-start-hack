@@ -79,6 +79,11 @@ PHRASING_CASES = [
     PhrasingCase("Above all, keep it at most CHF 40.", Decimal("40"), True, "read"),
     PhrasingCase("Order my meal after a late shift from a delivery service I use.", None, True, "not_stated", False),
     PhrasingCase("I understand the unlimited plan is fine.", None, True, "not_stated", False),
+    PhrasingCase("Don't go over CHF 50 for shoes.", Decimal("50"), True, "read", False),
+    PhrasingCase("Don't spend more than CHF 80.", Decimal("80"), True, "read", False),
+    PhrasingCase("Never pay more than CHF 25 for lunch.", Decimal("25"), True, "read", False),
+    PhrasingCase("Spend no less than CHF 30.", None, True, "unclear", True),
+    PhrasingCase("Never buy shoes over CHF 100.", Decimal("100"), True, "read", False),
 ]
 
 
@@ -212,6 +217,14 @@ def test_over_before_the_amount_is_named_in_its_question():
 
 
 
+# Check that a negated "less than" reads as a minimum, and that the question names the amount
+def test_negated_less_than_is_named_in_its_question():
+    reading = read_order_limit("Spend no less than CHF 30.", ())
+    assert len(reading.open_questions) == 1
+    assert "CHF 30.00" in reading.open_questions[0]
+
+
+
 # Check that upper and lower case do not matter
 def test_matching_ignores_upper_and_lower_case():
     reading = read_order_limit("KEEP IT UNDER chf 60 PER ORDER.", ())
@@ -323,7 +336,8 @@ def test_other_expectations_stay_at_their_defaults(example_message):
     mandate = read_mandate_with_instruction(example_message, GROCERY_INSTRUCTION)
     expectations = build_policy_from_mandate(mandate).expectations
     assert expectations.period_limit_chf is None
-    assert expectations.allowed_item_categories == ()
+    assert expectations.allowed_item_categories == ("groceries",)
+    assert expectations.prohibited_item_categories == ()
     assert expectations.requested_item is None
     assert expectations.no_addons is False
     assert expectations.merchant_familiarity == "any"

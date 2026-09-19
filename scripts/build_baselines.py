@@ -1,5 +1,5 @@
 # Script: build_baselines.py
-# Purpose: Count from the card history how familiar every shop, device, country, hour and amount is, and write the counts as two JSON files
+# Purpose: Count from the card history how familiar every shop, device, country, hour and amount is, and write the counts and the item catalogue as three JSON files
 # Author: Andrés Gallardo
 # Date: September 2026
 
@@ -29,9 +29,10 @@ DEFAULT_OUTPUT_FOLDER = REPOSITORY_FOLDER / "data" / "processed"
 
 
 
-# Name the two files this script writes
+# Name the three files this script writes
 FAMILIARITY_FILE_NAME = "familiarity_baselines.json"
 DIRECTORY_FILE_NAME = "merchant_directory.json"
+ITEM_CATALOGUE_FILE_NAME = "item_catalogue.json"
 
 
 
@@ -40,6 +41,7 @@ EXPECTED_HISTORY_ROW_COUNT = 4701
 EXPECTED_CARD_COUNT = 41
 EXPECTED_ACCOUNT_COUNT = 31
 EXPECTED_MERCHANT_COUNT = 58
+EXPECTED_ITEM_COUNT = 66
 EXPECTED_ACTIVE_PURCHASE_COUNT = 3803
 
 
@@ -85,13 +87,18 @@ QUICK_SERIES_SUMMARY_CARD_COUNT = 5
 
 
 
+# Name the three price columns of the item table, from the lowest to the highest price of one unit
+ITEM_PRICE_COLUMNS = ["unit_price_min_chf", "unit_price_typical_chf", "unit_price_max_chf"]
 
 
 
 
 
 
-#### Step 2: Load the four tables and convert their columns explicitly ####
+
+
+
+#### Step 2: Load the published tables and convert their columns explicitly ####
 
 # Hold the converted history, the cards with their account, the accounts and the merchants
 @dataclass(frozen = True)
@@ -187,6 +194,30 @@ def load_source_tables(data_folder = CASE_DATA_FOLDER):
         accounts = accounts,
         merchants = merchants.sort_values("merchant_id").reset_index(drop = True),
     )
+
+
+
+# Load the item table, check its size and turn the three prices into numbers.
+# The description of an item is prose for human readers and is left unread.
+def load_item_table(data_folder = CASE_DATA_FOLDER):
+    raw_items = read_case_table("items.csv", data_folder)
+    assert len(raw_items) == EXPECTED_ITEM_COUNT, "Expected 66 items, found " + str(len(raw_items))
+    assert raw_items["item_id"].is_unique, "An item identifier appears twice"
+    items = (
+        raw_items
+        .loc[:, ["item_id", "item_name", "item_category"] + ITEM_PRICE_COLUMNS]
+        .assign(unit_price_min_chf = lambda table: pd.to_numeric(table["unit_price_min_chf"], errors = "raise"))
+        .assign(unit_price_typical_chf = lambda table: pd.to_numeric(table["unit_price_typical_chf"], errors = "raise"))
+        .assign(unit_price_max_chf = lambda table: pd.to_numeric(table["unit_price_max_chf"], errors = "raise"))
+        .sort_values("item_id")
+        .reset_index(drop = True)
+    )
+    assert (items["item_name"] != "").all(), "An item has no name"
+    assert (items["item_category"] != "").all(), "An item has no category"
+    assert items[ITEM_PRICE_COLUMNS].notna().all().all(), "An item price could not be read"
+    assert (items["unit_price_min_chf"] <= items["unit_price_typical_chf"]).all(), "An item has a lowest price above its typical price"
+    assert (items["unit_price_typical_chf"] <= items["unit_price_max_chf"]).all(), "An item has a typical price above its highest price"
+    return items
 
 
 
@@ -415,7 +446,7 @@ def count_distinct_buyers_per_merchant(approved_purchases, merchant_ids, buyer_c
 
 
 
-#### Step 5: Build the content of the two files ####
+#### Step 5: Build the content of the three files ####
 
 # Write a UTC timestamp the way the published files write it
 def format_utc_timestamp(utc_timestamp):
@@ -532,13 +563,28 @@ def build_merchant_directory(source_tables, populations):
 
 
 
+# Build the item catalogue, with one entry per item that carries its name, its category and its three prices as numbers
+def build_item_catalogue(items):
+    return {
+        item_record["item_id"]: {
+            "item_name": item_record["item_name"],
+            "item_category": item_record["item_category"],
+            "unit_price_min_chf": float(item_record["unit_price_min_chf"]),
+            "unit_price_typical_chf": float(item_record["unit_price_typical_chf"]),
+            "unit_price_max_chf": float(item_record["unit_price_max_chf"]),
+        }
+        for item_record in items.to_dict("records")
+    }
 
 
 
 
 
 
-#### Step 6: Write the two files and verify them by reading them back ####
+
+
+
+#### Step 6: Write the three files and verify them by reading them back ####
 
 # Hold what one build produced, for the console summary
 @dataclass(frozen = True)
@@ -547,6 +593,7 @@ class BuildResult:
     populations: Populations
     familiarity_baselines: dict
     merchant_directory: dict
+    item_catalogue: dict
     written_paths: tuple
 
 
@@ -558,24 +605,27 @@ def write_json_file(content, file_path):
 
 
 
-# Build both files from the published tables, write them and check what was written
+# Build the three files from the published tables, write them and check what was written
 def build_and_write_baselines(output_folder = DEFAULT_OUTPUT_FOLDER, data_folder = CASE_DATA_FOLDER):
 
-    # Load the tables and build the content of both files
+    # Load the tables and build the content of the three files
     source_tables = load_source_tables(data_folder)
     populations = select_populations(source_tables.history)
     familiarity_baselines = build_familiarity_baselines(source_tables, populations)
     merchant_directory = build_merchant_directory(source_tables, populations)
+    item_catalogue = build_item_catalogue(load_item_table(data_folder))
 
 
 
-    # Write both files into the output folder
+    # Write the three files into the output folder
     output_folder = Path(output_folder)
     output_folder.mkdir(parents = True, exist_ok = True)
     familiarity_path = output_folder / FAMILIARITY_FILE_NAME
     directory_path = output_folder / DIRECTORY_FILE_NAME
+    item_catalogue_path = output_folder / ITEM_CATALOGUE_FILE_NAME
     write_json_file(familiarity_baselines, familiarity_path)
     write_json_file(merchant_directory, directory_path)
+    write_json_file(item_catalogue, item_catalogue_path)
 
 
 
@@ -600,12 +650,28 @@ def build_and_write_baselines(output_folder = DEFAULT_OUTPUT_FOLDER, data_folder
     assert familiarity_readback == familiarity_baselines, "The familiarity file reads back differently from what was built"
     assert directory_readback == merchant_directory, "The merchant directory reads back differently from what was built"
 
+
+
+    # Read the item catalogue back and check the number of entries, the fields of every entry and the type of every price
+    item_catalogue_readback = json.loads(item_catalogue_path.read_text(encoding = "utf-8"))
+    expected_item_fields = sorted(["item_name", "item_category"] + ITEM_PRICE_COLUMNS)
+    items_with_unexpected_content = sorted(
+        item_id
+        for item_id, item_entry in item_catalogue_readback.items()
+        if sorted(item_entry) != expected_item_fields
+        or not all(isinstance(item_entry[price_column], float) for price_column in ITEM_PRICE_COLUMNS)
+    )
+    assert len(item_catalogue_readback) == EXPECTED_ITEM_COUNT, "The item catalogue does not hold 66 items"
+    assert not items_with_unexpected_content, "These items carry unexpected fields or a price that is not a number - " + ", ".join(items_with_unexpected_content)
+    assert item_catalogue_readback == item_catalogue, "The item catalogue reads back differently from what was built"
+
     return BuildResult(
         source_tables = source_tables,
         populations = populations,
         familiarity_baselines = familiarity_baselines,
         merchant_directory = merchant_directory,
-        written_paths = (familiarity_path, directory_path),
+        item_catalogue = item_catalogue,
+        written_paths = (familiarity_path, directory_path, item_catalogue_path),
     )
 
 
@@ -648,13 +714,16 @@ def print_build_summary(build_result):
 
     # Show the window of the history and the number of entries per section
     familiarity_baselines = build_result.familiarity_baselines
+    item_categories = {item_entry["item_category"] for item_entry in build_result.item_catalogue.values()}
     entry_counts = pd.DataFrame({
-        "section": ["cards", "customers", "merchants", "merchant directory"],
+        "section": ["cards", "customers", "merchants", "merchant directory", "item catalogue", "item categories"],
         "entries": [
             len(familiarity_baselines["cards"]),
             len(familiarity_baselines["customers"]),
             len(familiarity_baselines["merchants"]),
             len(build_result.merchant_directory),
+            len(build_result.item_catalogue),
+            len(item_categories),
         ],
     })
     print("--- History window ---")
@@ -699,13 +768,13 @@ def print_build_summary(build_result):
 
 # Read the command line options
 def parse_command_line(command_line_arguments = None):
-    parser = argparse.ArgumentParser(description = "Build the familiarity and behavior counts from the card history.")
-    parser.add_argument("--output-folder", default = str(DEFAULT_OUTPUT_FOLDER), help = "The folder the two JSON files are written into")
+    parser = argparse.ArgumentParser(description = "Build the familiarity and behavior counts from the card history, and the item catalogue.")
+    parser.add_argument("--output-folder", default = str(DEFAULT_OUTPUT_FOLDER), help = "The folder the three JSON files are written into")
     return parser.parse_args(command_line_arguments)
 
 
 
-# Build both files from the command line options and print the summary
+# Build the three files from the command line options and print the summary
 def main(command_line_arguments = None):
     options = parse_command_line(command_line_arguments)
     build_result = build_and_write_baselines(output_folder = Path(options.output_folder))

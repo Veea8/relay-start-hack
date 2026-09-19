@@ -1,5 +1,5 @@
 # Script: test_facts.py
-# Purpose: Check that amounts become exact decimals with half-even rounding and that the fact sheet of a purchase cannot be changed
+# Purpose: Check that amounts become exact decimals with half-even rounding, that the cart lines are read exactly and that the fact sheet of a purchase cannot be changed
 # Author: Andrés Gallardo
 # Date: September 2026
 
@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.engine.facts import FactSheet, build_fact_sheet, to_money
+from app.engine.facts import FactSheet, LineFact, build_fact_sheet, to_money
 from app.models.events import read_purchase_message
 
 
@@ -66,3 +66,52 @@ def test_fact_sheet_is_frozen(example_message):
     fact_sheet = build_fact_sheet(read_purchase_message(example_message))
     with pytest.raises(dataclasses.FrozenInstanceError):
         fact_sheet.billing_amount_chf = Decimal("1.00")
+
+
+
+
+
+
+
+
+
+#### Step 3: Check the cart lines ####
+
+# Check the one cart line of the example message field by field, and that it carries no identifier
+def test_line_of_the_example_message(example_message):
+    fact_sheet = build_fact_sheet(read_purchase_message(example_message))
+    assert fact_sheet.lines == (
+        LineFact(
+            line_no = 1,
+            item_name = "Example grocery item",
+            item_category = "groceries",
+            quantity = 1,
+            unit_price = Decimal("18.00"),
+            currency = "CHF",
+            line_total = Decimal("18.00"),
+        ),
+    )
+    assert [line_field.name for line_field in dataclasses.fields(LineFact)] == ["line_no", "item_name", "item_category", "quantity", "unit_price", "currency", "line_total"]
+
+
+
+# Check that the total of a line is the exact unit price times the quantity, in the currency of the line
+def test_line_with_quantity_three(example_message):
+    example_message["authorization"]["items"][0]["quantity"] = 3
+    example_message["authorization"]["items"][0]["unit_price"] = 19.99
+    example_message["authorization"]["items"][0]["currency"] = "EUR"
+    line = build_fact_sheet(read_purchase_message(example_message)).lines[0]
+    assert line.quantity == 3
+    assert line.unit_price == Decimal("19.99")
+    assert line.line_total == Decimal("59.97")
+    assert line.line_total.as_tuple().exponent == -2
+    assert line.currency == "EUR"
+
+
+
+# Check that a cart line and the tuple of lines cannot be changed after they were built
+def test_lines_are_frozen(example_message):
+    fact_sheet = build_fact_sheet(read_purchase_message(example_message))
+    assert isinstance(fact_sheet.lines, tuple)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        fact_sheet.lines[0].item_category = "electronics"

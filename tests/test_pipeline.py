@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from app.engine.guards.base import PlaceholderGuard
+from app.engine.guards.g_category_scope import CategoryScopeGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.engine.guards.registry import build_guard_pipeline, get_default_guard_pipeline, list_placeholder_guard_ids
 from app.engine.pipeline import decide
@@ -84,10 +85,10 @@ ONLY_ALLOWED_FUNCTION_START = "def collect_trace_identifiers(event):"
 
 
 
-# State an instruction with a clear limit that the CHF 20 of the example message meets exactly,
-# and the one guard that is built and therefore answers PASS instead of SKIP
+# State an instruction with a clear limit that the CHF 20 of the example message meets exactly and with a kind of goods that its cart line is,
+# and the two guards that are built and therefore answer PASS instead of SKIP, in execution order
 CLEAR_LIMIT_INSTRUCTION = "Buy one grocery item for CHF 20 or less."
-BUILT_GUARD_ID = "per_order_limit"
+BUILT_GUARD_IDS = ("per_order_limit", "category_scope")
 
 
 
@@ -236,8 +237,8 @@ def dump_trace_without_running_times(decision_trace):
 
 #### Step 3: Check the default pipeline ####
 
-# Check that the example message is approved by 22 placeholder guards and the one built guard, in the stated order
-def test_default_pipeline_approves_with_22_skipped_guards_and_one_pass(example_message):
+# Check that the example message is approved by 21 placeholder guards and the two built guards, in the stated order
+def test_default_pipeline_approves_with_21_skipped_guards_and_two_passes(example_message):
     decision_trace = decide_example(example_message)
     assert decision_trace.decision == Decision.APPROVE
     assert decision_trace.reason_codes == []
@@ -248,20 +249,21 @@ def test_default_pipeline_approves_with_22_skipped_guards_and_one_pass(example_m
     assert sorted(guard_result.guard_number for guard_result in decision_trace.guards) == list(range(1, 24))
     assert all(guard_result.elapsed_ms >= 0 for guard_result in decision_trace.guards)
 
-    # Expect SKIP with the reason that the guard is not built from the 22 placeholders, without evidence and without a message
-    placeholder_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id != BUILT_GUARD_ID]
-    assert len(placeholder_results) == 22
+    # Expect SKIP with the reason that the guard is not built from the 21 placeholders, without evidence and without a message
+    placeholder_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id not in BUILT_GUARD_IDS]
+    assert len(placeholder_results) == 21
     assert {guard_result.verdict for guard_result in placeholder_results} == {GuardVerdict.SKIP}
     assert {guard_result.reason_code for guard_result in placeholder_results} == {ReasonCode.GUARD_NOT_BUILT}
     assert all(guard_result.evidence == [] and guard_result.customer_message is None for guard_result in placeholder_results)
 
-    # Expect PASS from the limit per order, because CHF 20 meets a limit of CHF 20 or less
-    built_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id == BUILT_GUARD_ID]
-    assert len(built_results) == 1
-    assert built_results[0].verdict == GuardVerdict.PASS
-    assert built_results[0].reason_code is None
-    assert len(built_results[0].evidence) == 1
-    assert built_results[0].customer_message is None
+    # Expect PASS from the limit per order, because CHF 20 meets a limit of CHF 20 or less,
+    # and PASS from the category scope, because the instruction asks for groceries and the one cart line is groceries
+    built_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id in BUILT_GUARD_IDS]
+    assert [guard_result.guard_id for guard_result in built_results] == list(BUILT_GUARD_IDS)
+    assert [guard_result.verdict for guard_result in built_results] == [GuardVerdict.PASS, GuardVerdict.PASS]
+    assert [guard_result.reason_code for guard_result in built_results] == [None, None]
+    assert [len(guard_result.evidence) for guard_result in built_results] == [1, 1]
+    assert [guard_result.customer_message for guard_result in built_results] == [None, None]
 
 
 
@@ -272,7 +274,7 @@ def test_unchanged_example_message_asks_about_the_unclear_limit(example_message)
     decision_trace = decide_example(example_message, instruction = unchanged_instruction)
     assert decision_trace.decision == Decision.STEP_UP
     assert decision_trace.reason_codes == [ReasonCode.ORDER_LIMIT_UNCLEAR]
-    assert decision_trace.aggregation.raised_by == [BUILT_GUARD_ID]
+    assert decision_trace.aggregation.raised_by == ["per_order_limit"]
     assert decision_trace.aggregation.uncertainty_policy_applied is True
     assert "CHF 20.00" in decision_trace.customer_message
 
@@ -289,22 +291,24 @@ def test_every_guard_has_its_id_and_its_family(example_message):
 
 
 
-# Check that the registry builds 22 placeholders and the one built guard, as a tuple in execution order
-def test_registry_lists_22_placeholders_and_one_built_guard():
+# Check that the registry builds 21 placeholders and the two built guards, as a tuple in execution order
+def test_registry_lists_21_placeholders_and_two_built_guards():
     guards = build_guard_pipeline()
     assert isinstance(guards, tuple)
     assert len(guards) == 23
     assert [guard.guard_number for guard in guards] == EXPECTED_EXECUTION_ORDER
     built_guards = [guard for guard in guards if not isinstance(guard, PlaceholderGuard)]
-    assert len(built_guards) == 1
+    assert len(built_guards) == 2
     assert isinstance(built_guards[0], PerOrderLimitGuard)
-    assert (built_guards[0].guard_number, built_guards[0].guard_id, built_guards[0].family) == (3, BUILT_GUARD_ID, GuardFamily.SPENDING_LIMITS)
+    assert isinstance(built_guards[1], CategoryScopeGuard)
+    assert (built_guards[0].guard_number, built_guards[0].guard_id, built_guards[0].family) == (3, "per_order_limit", GuardFamily.SPENDING_LIMITS)
+    assert (built_guards[1].guard_number, built_guards[1].guard_id, built_guards[1].family) == (6, "category_scope", GuardFamily.ITEM_AND_TERMS)
     assert list_placeholder_guard_ids(guards) == [
         EXPECTED_GUARDS_BY_NUMBER[guard_number][0]
         for guard_number in EXPECTED_EXECUTION_ORDER
-        if EXPECTED_GUARDS_BY_NUMBER[guard_number][0] != BUILT_GUARD_ID
+        if EXPECTED_GUARDS_BY_NUMBER[guard_number][0] not in BUILT_GUARD_IDS
     ]
-    assert len(list_placeholder_guard_ids(guards)) == 22
+    assert len(list_placeholder_guard_ids(guards)) == 21
     assert list_placeholder_guard_ids([FixedVerdictGuard(1, "stub_pass", GuardVerdict.PASS)]) == []
 
 

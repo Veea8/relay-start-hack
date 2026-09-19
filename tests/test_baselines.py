@@ -235,7 +235,7 @@ def test_ten_minute_window_edges():
 # Check that building twice gives the same bytes
 def test_building_twice_gives_identical_files(built_folder, tmp_path):
     build_baselines.build_and_write_baselines(output_folder = tmp_path)
-    for file_name in (build_baselines.FAMILIARITY_FILE_NAME, build_baselines.DIRECTORY_FILE_NAME):
+    for file_name in (build_baselines.FAMILIARITY_FILE_NAME, build_baselines.DIRECTORY_FILE_NAME, build_baselines.ITEM_CATALOGUE_FILE_NAME):
         assert (built_folder / file_name).read_bytes() == (tmp_path / file_name).read_bytes()
 
 
