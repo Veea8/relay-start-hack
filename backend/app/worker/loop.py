@@ -84,6 +84,42 @@ def choose_fallback_decision(uncertainty_policy):
 
 #### Step 2: Build the records ####
 
+# Compute the trust score of a trace, or none when the computation fails, because the score takes no part in the decision
+# and a failing score must never cost an answer. The note names the type of the exception only, so no shop text reaches it.
+def score_trace_safely(trace, uncertainty_policy, note_error = None):
+    try:
+        return score_trace(trace, uncertainty_policy)
+    except Exception as score_error:
+        if note_error is not None:
+            note_error("The trust score could not be computed - " + type(score_error).__name__)
+        return None
+
+
+
+# Build the trust score of a message that could not be read, or none when that fails
+def build_invalid_event_score_safely(uncertainty_policy, note_error = None):
+    try:
+        return build_invalid_event_score(uncertainty_policy)
+    except Exception as score_error:
+        if note_error is not None:
+            note_error("The trust score of an unreadable message could not be built - " + type(score_error).__name__)
+        return None
+
+
+
+# Build the evidence items of a trust score, or none when there is no score or the items cannot be built
+def build_trust_evidence_safely(trust_score, note_error = None):
+    if trust_score is None:
+        return []
+    try:
+        return build_trust_evidence(trust_score)
+    except Exception as evidence_error:
+        if note_error is not None:
+            note_error("The trust score evidence could not be built - " + type(evidence_error).__name__)
+        return []
+
+
+
 # Build a decision record for a valid message that the engine could not decide, with an empty guard list and the engine named as the raiser
 def build_fallback_trace(event, received_at, decided_at, reason_code, customer_message):
     fallback_decision = choose_fallback_decision(event.mandate.uncertainty_policy)
@@ -156,7 +192,7 @@ def build_record_from_trace(trace, run_id, event, source, human_timeout_seconds,
     if decision_value == "step_up":
         human_deadline_at = format_moment(window_starts_at + timedelta(seconds = human_timeout_seconds))
     if trust_score is None:
-        trust_score = score_trace(trace, event.mandate.uncertainty_policy)
+        trust_score = score_trace_safely(trace, event.mandate.uncertainty_policy)
     return {
         "live_authorization_id": trace.ids.authorization_id,
         "run_id": run_id,
@@ -186,7 +222,7 @@ def build_record_from_trace(trace, run_id, event, source, human_timeout_seconds,
         "trace": trace.model_dump(mode = "json"),
         "problems": None,
         "resolution": None,
-        "trust_score": trust_score.model_dump(mode = "json"),
+        "trust_score": trust_score.model_dump(mode = "json") if trust_score is not None else None,
     }
 
 
@@ -198,8 +234,9 @@ def format_money_text(value):
 
 
 # Build the store record of a message that could not be read, which is a question with the reason INVALID_EVENT
-def build_invalid_event_record(live_authorization_id, run_id, raw_message, problems, received_at, decided_at, source, human_timeout_seconds):
+def build_invalid_event_record(live_authorization_id, run_id, raw_message, problems, received_at, decided_at, source, human_timeout_seconds, note_error = None):
     deadline_text = read_raw_text(raw_message, "deadline_at")
+    trust_score = build_invalid_event_score_safely(read_raw_text(raw_message, "mandate", "uncertainty_policy", default = "unknown"), note_error)
     return {
         "live_authorization_id": live_authorization_id,
         "run_id": run_id,
@@ -229,40 +266,40 @@ def build_invalid_event_record(live_authorization_id, run_id, raw_message, probl
         "trace": None,
         "problems": list(problems),
         "resolution": None,
-        "trust_score": build_invalid_event_score(read_raw_text(raw_message, "mandate", "uncertainty_policy", default = "unknown")).model_dump(mode = "json"),
+        "trust_score": trust_score.model_dump(mode = "json") if trust_score is not None else None,
     }
 
 
 
 # Build the evidence items that carry the trust score of a record, or none when the record has no score or the score is left out
-def trust_evidence_of_record(record, include_trust_score):
+def trust_evidence_of_record(record, include_trust_score, note_error = None):
     if not include_trust_score or record.get("trust_score") is None:
         return []
-    return build_trust_evidence(record["trust_score"])
+    return build_trust_evidence_safely(record["trust_score"], note_error)
 
 
 
 # Build the body sent to the platform for a purchase whose message could not be read
-def build_invalid_event_request_body(live_authorization_id, engine_version, record = None, include_trust_score = True):
+def build_invalid_event_request_body(live_authorization_id, engine_version, record = None, include_trust_score = True, note_error = None):
     return {
         "authorization_id": live_authorization_id,
         "decision": "step_up",
         "reason_codes": [ReasonCode.INVALID_EVENT.value],
         "customer_message": INVALID_EVENT_MESSAGE,
-        "evidence": trust_evidence_of_record(record or {}, include_trust_score),
+        "evidence": trust_evidence_of_record(record or {}, include_trust_score, note_error),
         "engine_version": engine_version,
     }
 
 
 
 # Build the body sent to the platform from a stored record, for a delivery that repeats a purchase already decided
-def build_request_body_from_record(record, engine_version, include_trust_score = True):
+def build_request_body_from_record(record, engine_version, include_trust_score = True, note_error = None):
     return {
         "authorization_id": record["live_authorization_id"],
         "decision": record["decision"],
         "reason_codes": list(record.get("reason_codes", [])),
         "customer_message": record.get("customer_message", ""),
-        "evidence": trust_evidence_of_record(record, include_trust_score),
+        "evidence": trust_evidence_of_record(record, include_trust_score, note_error),
         "engine_version": engine_version,
     }
 
@@ -551,7 +588,7 @@ class DecisionWorker:
         # Decide inside the budget, and fall back to a question or a refusal when the engine is late or fails.
         # The trust score is derived from the trace once and travels with the record and with the answer to the platform.
         trace = await self.decide_within_budget(event, received_at, run_id)
-        trust_score = score_trace(trace, event.mandate.uncertainty_policy)
+        trust_score = score_trace_safely(trace, event.mandate.uncertainty_policy, self.note_error)
         record = build_record_from_trace(trace, run_id, event, self.source, self.human_timeout_seconds, self.read_clock(), trust_score = trust_score)
         self.store.save_decision(record)
         self.counters["decisions"] = self.counters["decisions"] + 1
@@ -563,7 +600,7 @@ class DecisionWorker:
         # Answer the platform, retrying until the deadline, then record and publish what happened
         request_body = build_decision_request_body(trace)
         if self.include_trust_score:
-            request_body["evidence"] = list(request_body["evidence"]) + build_trust_evidence(trust_score)
+            request_body["evidence"] = list(request_body["evidence"]) + build_trust_evidence_safely(trust_score, self.note_error)
         await self.post_until_deadline(live_authorization_id, request_body, event.deadline_at)
         record = self.store.get_decision(live_authorization_id)
         self.audit_log.append(run_id, "decision", record)
@@ -581,7 +618,7 @@ class DecisionWorker:
         if not existing_record["posted"]:
             deadline_text = existing_record.get("deadline_at") or read_raw_text(raw_message, "deadline_at")
             deadline_at = self.read_deadline(deadline_text)
-            await self.post_until_deadline(live_authorization_id, build_request_body_from_record(existing_record, self.engine_version(), self.include_trust_score), deadline_at)
+            await self.post_until_deadline(live_authorization_id, build_request_body_from_record(existing_record, self.engine_version(), self.include_trust_score, self.note_error), deadline_at)
         record = self.store.get_decision(live_authorization_id)
         self.broadcaster.publish("decision", record)
         self.publish_status()
@@ -593,10 +630,10 @@ class DecisionWorker:
     async def handle_invalid_event(self, live_authorization_id, run_id, raw_message, problems, received_at):
         decided_at = self.read_clock()
         self.counters["invalid_events"] = self.counters["invalid_events"] + 1
-        record = build_invalid_event_record(live_authorization_id, run_id, raw_message, problems, received_at, decided_at, self.source, self.human_timeout_seconds)
+        record = build_invalid_event_record(live_authorization_id, run_id, raw_message, problems, received_at, decided_at, self.source, self.human_timeout_seconds, self.note_error)
         self.store.save_decision(record)
         deadline_at = self.read_deadline(record["deadline_at"])
-        await self.post_until_deadline(live_authorization_id, build_invalid_event_request_body(live_authorization_id, self.engine_version(), record, self.include_trust_score), deadline_at)
+        await self.post_until_deadline(live_authorization_id, build_invalid_event_request_body(live_authorization_id, self.engine_version(), record, self.include_trust_score, self.note_error), deadline_at)
         record = self.store.get_decision(live_authorization_id)
         self.audit_log.append(run_id, "decision", record)
         self.broadcaster.publish("decision", record)
