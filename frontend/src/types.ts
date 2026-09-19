@@ -85,14 +85,21 @@ export interface HardRule {
 }
 
 export interface PolicyDraft {
-  draft_id: string;
+  draft_id?: string;
   mandate_id?: string;
-  status: "draft" | "active" | "revoked";
+  status: "compiled" | "draft" | "active" | "revoked";
   instruction: string;
   hard_rules: HardRule[];
   uncertainty_policy: "ask" | "decline" | "approve";
   guidance: string[];
   open_questions: string[];
+  checks: PolicyCheck[];
+}
+
+export interface PolicyCheck {
+  label: string;
+  detail: string;
+  stored_with_platform: boolean;
 }
 
 export interface Scenario {
@@ -113,5 +120,33 @@ export interface EngineStatus {
 export type StreamEvent =
   | { type: "decision"; data: DecisionTrace }
   | { type: "pending"; data: PendingAuthorization }
-  | { type: "resolved"; data: { authorization_id: string; decision: "approve" | "decline" } }
+  | { type: "resolution"; data: DecisionTrace }
   | { type: "status"; data: EngineStatus };
+
+export interface DecisionRecord {
+  live_authorization_id: string;
+  run_id: string;
+  source_authorization_id: string | null;
+  scenario_id: string | null;
+  replay_order: number | null;
+  mandate_id: string | null;
+  sim_timestamp: string | null;
+  amount_chf: string | null;
+  currency: string | null;
+  merchant_id: string | null;
+  merchant_name: string | null;
+  decision: Decision;
+  status: "approved" | "declined" | "pending" | "expired" | "cancelled";
+  reason_codes: string[];
+  customer_message: string;
+  notes: string[];
+  received_at: string;
+  decided_at: string;
+  deadline_at: string;
+  margin_ms: number;
+  total_ms: number;
+  human_deadline_at: string | null;
+  trace: DecisionTrace | null;
+  problems: string[];
+  resolution: Record<string, unknown> | null;
+}

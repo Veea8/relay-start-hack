@@ -1,6 +1,7 @@
 import { mockDecisions, mockPending, mockPolicy, mockStatus } from "./mockData";
 import type {
   DecisionTrace,
+  DecisionRecord,
   EngineStatus,
   PendingAuthorization,
   PolicyDraft,
@@ -19,11 +20,90 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(body || `Request failed with status ${response.status}`);
+    const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(body?.error?.message || `Request failed with status ${response.status}`);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+interface BackendStatus {
+  engine_mode: "deterministic" | "model" | "degraded";
+  llm_mode: string;
+  bootstrap: { scenarios?: Array<Record<string, unknown>> } | null;
+  bootstrap_error: string | null;
+  worker: { state: string; last_margin_ms: number | null; active_run_ids: string[] };
+}
+
+function normalizeScenario(raw: Record<string, unknown>) {
+  return {
+    scenario_id: String(raw.scenario_id ?? raw.id ?? ""),
+    name: String(raw.name ?? raw.title ?? raw.scenario_id ?? "Scenario"),
+    purchase_count: Number(raw.purchase_count ?? raw.event_count ?? raw.authorization_count ?? 0),
+  };
+}
+
+export function normalizeStatus(raw: BackendStatus): EngineStatus {
+  return {
+    connected: raw.bootstrap_error === null,
+    engine_mode: raw.engine_mode,
+    model_name: raw.llm_mode === "off" ? null : raw.llm_mode,
+    latest_margin_ms: raw.worker.last_margin_ms,
+    active_run_id: raw.worker.active_run_ids[0] ?? null,
+    scenarios: (raw.bootstrap?.scenarios ?? []).map(normalizeScenario).filter((scenario) => scenario.scenario_id !== ""),
+  };
+}
+
+function fallbackTrace(record: DecisionRecord): DecisionTrace {
+  const amount = Number(record.amount_chf ?? 0);
+  return {
+    trace_version: "1",
+    engine_version: "relay",
+    ids: {
+      authorization_id: record.live_authorization_id,
+      source_authorization_id: record.source_authorization_id ?? "unknown",
+      request_id: "unknown",
+      mandate_id: record.mandate_id ?? "unknown",
+      scenario_id: record.scenario_id ?? "unknown",
+    },
+    received_at: record.received_at,
+    decided_at: record.decided_at,
+    deadline_at: record.deadline_at,
+    margin_ms: record.margin_ms,
+    decision: record.decision,
+    reason_codes: record.reason_codes,
+    customer_message: record.customer_message,
+    notes: record.notes,
+    facts: {
+      amounts: { amount, currency: record.currency ?? "CHF", billing_amount_chf: amount },
+      merchant: {
+        merchant_id: record.merchant_id ?? "unknown",
+        merchant_name: record.merchant_name ?? "Unknown merchant",
+        merchant_category: "unknown",
+        merchant_country: "unknown",
+      },
+      familiarity: null,
+      extracted_item_facts: null,
+    },
+    guards: [],
+    aggregation: { initial: "approve", final: record.decision, raised_by: [], uncertainty_policy_applied: false },
+    llm: { mode: "off", calls: [] },
+    timings: { total_ms: record.total_ms },
+    resolution: record.resolution,
+  };
+}
+
+export function traceFromRecord(record: DecisionRecord) {
+  return record.trace ? { ...record.trace, resolution: record.resolution } : fallbackTrace(record);
+}
+
+export function pendingFromRecord(record: DecisionRecord): PendingAuthorization {
+  return {
+    authorization_id: record.live_authorization_id,
+    created_at: record.received_at,
+    expires_at: record.human_deadline_at ?? record.deadline_at,
+    trace: traceFromRecord(record),
+  };
 }
 
 export const api = {
@@ -32,7 +112,7 @@ export const api = {
       await wait();
       return structuredClone(mockStatus);
     }
-    return request("/api/status");
+    return normalizeStatus(await request<BackendStatus>("/api/status"));
   },
 
   async decisions(): Promise<DecisionTrace[]> {
@@ -40,7 +120,8 @@ export const api = {
       await wait();
       return structuredClone(mockDecisions);
     }
-    return request("/api/decisions");
+    const response = await request<{ decisions: DecisionRecord[] }>("/api/decisions");
+    return response.decisions.map(traceFromRecord).reverse();
   },
 
   async pending(): Promise<PendingAuthorization[]> {
@@ -48,7 +129,8 @@ export const api = {
       await wait();
       return structuredClone(mockPending);
     }
-    return request("/api/pending");
+    const response = await request<{ pending: DecisionRecord[] }>("/api/pending");
+    return response.pending.map(pendingFromRecord);
   },
 
   async compilePolicy(instruction: string): Promise<PolicyDraft> {
@@ -58,9 +140,9 @@ export const api = {
       const limit = amountMatch ? Number(amountMatch[1]) : null;
       return {
         ...structuredClone(mockPolicy),
-        draft_id: `TD-MOCK-${Date.now()}`,
+        draft_id: undefined,
         mandate_id: undefined,
-        status: "draft",
+        status: "compiled",
         instruction,
         hard_rules: limit
           ? [{ field: "authorization.billing_amount_chf", operator: "<=", value: limit, currency: "CHF", scope: "purchase" }]
@@ -68,37 +150,50 @@ export const api = {
         open_questions: limit ? [] : ["What is the maximum amount for one purchase?"],
       };
     }
-    return request("/api/policy/compile", {
+    const compiled = await request<Omit<PolicyDraft, "status" | "guidance">>("/api/policy/compile", {
       method: "POST",
-      body: JSON.stringify({ instruction }),
+      body: JSON.stringify({ instruction, uncertainty_policy: "ask", hard_rules: [] }),
     });
+    return { ...compiled, status: "compiled", guidance: [] };
   },
 
-  async confirmPolicy(draftId: string): Promise<PolicyDraft> {
+  async confirmPolicy(policy: PolicyDraft): Promise<PolicyDraft> {
     if (USE_MOCK_API) {
       await wait();
-      return { ...structuredClone(mockPolicy), draft_id: draftId, status: "active" };
+      return { ...structuredClone(policy), draft_id: `TD-MOCK-${Date.now()}`, mandate_id: "TM-DEMO-0001", status: "active" };
     }
-    return request("/api/policy/confirm", {
+    const draft = await request<{ draft_id: string }>("/api/policy/draft", {
       method: "POST",
-      body: JSON.stringify({ draft_id: draftId, confirmed: true }),
+      body: JSON.stringify({
+        instruction: policy.instruction,
+        hard_rules: policy.hard_rules,
+        uncertainty_policy: policy.uncertainty_policy,
+        guidance: policy.guidance,
+        open_questions: policy.open_questions,
+      }),
     });
+    const mandate = await request<Omit<PolicyDraft, "draft_id" | "checks" | "guidance" | "open_questions">>("/api/policy/confirm", {
+      method: "POST",
+      body: JSON.stringify({ draft_id: draft.draft_id }),
+    });
+    return { ...policy, ...mandate, draft_id: draft.draft_id, status: "active" };
   },
 
-  async tightenPolicy(mandateId: string): Promise<PolicyDraft> {
+  async tightenPolicy(policy: PolicyDraft): Promise<PolicyDraft> {
     if (USE_MOCK_API) {
       await wait();
-      return { ...structuredClone(mockPolicy), mandate_id: mandateId, uncertainty_policy: "decline" };
+      return { ...structuredClone(policy), uncertainty_policy: "decline" };
     }
-    return request(`/api/policy/${mandateId}`, {
+    const mandate = await request<Partial<PolicyDraft>>("/api/policy", {
       method: "PATCH",
-      body: JSON.stringify({ uncertainty_policy: "decline" }),
+      body: JSON.stringify({ add_rules: [], uncertainty_policy: "decline" }),
     });
+    return { ...policy, ...mandate, status: "active", uncertainty_policy: "decline" };
   },
 
-  async revokePolicy(mandateId: string): Promise<void> {
+  async revokePolicy(): Promise<void> {
     if (USE_MOCK_API) return wait();
-    return request(`/api/policy/${mandateId}`, { method: "DELETE" });
+    return request("/api/policy", { method: "DELETE" });
   },
 
   async startRun(scenarioId: string, mandateId: string): Promise<{ run_id: string }> {
@@ -114,29 +209,43 @@ export const api = {
 
   async resolve(authorizationId: string, decision: "approve" | "decline"): Promise<void> {
     if (USE_MOCK_API) return wait();
-    return request(`/api/resolve/${authorizationId}`, {
+    await request(`/api/resolve/${authorizationId}`, {
       method: "POST",
-      body: JSON.stringify({ decision }),
+      body: JSON.stringify({ decision, customer_message: null }),
     });
   },
 };
 
-export function connectEventStream(onEvent: (event: StreamEvent) => void, onState: (connected: boolean) => void) {
+export function connectEventStream(onEvent: (event: StreamEvent) => void, onState: (connected: boolean) => void, onReconnect: () => void) {
   if (USE_MOCK_API) {
     onState(true);
     return () => undefined;
   }
 
   const eventSource = new EventSource(`${API_BASE_URL}/api/stream`);
-  const handle = (message: MessageEvent<string>) => {
+  const parseRecord = (message: MessageEvent<string>) => JSON.parse(message.data) as DecisionRecord;
+  const handleStatus = (message: MessageEvent<string>) => {
     try {
-      onEvent(JSON.parse(message.data) as StreamEvent);
+      onEvent({ type: "status", data: normalizeStatus(JSON.parse(message.data) as BackendStatus) });
     } catch {
-      // A malformed event is ignored; the next valid event keeps the live view current.
+      // A malformed event is ignored; reconnect reloads authoritative state.
     }
   };
-  eventSource.onopen = () => onState(true);
-  eventSource.onmessage = handle;
+  const handleDecision = (message: MessageEvent<string>) => {
+    try {
+      const record = parseRecord(message);
+      onEvent({ type: "decision", data: traceFromRecord(record) });
+      if (record.status === "pending") onEvent({ type: "pending", data: pendingFromRecord(record) });
+    } catch { /* reconnect reloads authoritative state */ }
+  };
+  const handleResolution = (message: MessageEvent<string>) => {
+    try { onEvent({ type: "resolution", data: traceFromRecord(parseRecord(message)) }); }
+    catch { /* reconnect reloads authoritative state */ }
+  };
+  eventSource.addEventListener("status", handleStatus as EventListener);
+  eventSource.addEventListener("decision", handleDecision as EventListener);
+  eventSource.addEventListener("resolution", handleResolution as EventListener);
+  eventSource.onopen = () => { onState(true); onReconnect(); };
   eventSource.onerror = () => onState(false);
   return () => eventSource.close();
 }

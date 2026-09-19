@@ -199,4 +199,8 @@ export const mockPolicy: PolicyDraft = {
   uncertainty_policy: "ask",
   guidance: ["Use a shop the customer uses regularly."],
   open_questions: ["Ask the customer when seller familiarity cannot be established."],
+  checks: [
+    { label: "Limit per order", detail: "Each order at most CHF 20.00, delivery included.", stored_with_platform: true },
+    { label: "Shop familiarity", detail: "Use a shop the customer uses regularly.", stored_with_platform: false },
+  ],
 };

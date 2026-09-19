@@ -20,7 +20,7 @@ describe("Relay interface", () => {
     render(<App />);
     await screen.findByRole("heading", { name: /set the boundaries/i });
     await userEvent.click(screen.getByRole("button", { name: /build policy/i }));
-    expect(await screen.findByText("Purchase limit")).toBeInTheDocument();
+    expect(await screen.findByText("Limit per order")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /confirm policy/i }));
     await waitFor(() => expect(screen.getByText(/policy confirmed/i)).toBeInTheDocument());
   });

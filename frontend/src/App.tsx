@@ -145,7 +145,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
   const confirm = () =>
     policy &&
     runAction("confirm", async () => {
-      const result = await api.confirmPolicy(policy.draft_id);
+      const result = await api.confirmPolicy(policy);
       setPolicy(result);
       setNotice({ tone: "success", message: "Policy confirmed and ready to protect purchases." });
     });
@@ -153,7 +153,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
   const tighten = () =>
     policy?.mandate_id &&
     runAction("tighten", async () => {
-      const result = await api.tightenPolicy(policy.mandate_id!);
+      const result = await api.tightenPolicy(policy);
       setPolicy(result);
       setNotice({ tone: "success", message: "Uncertain purchases will now be declined." });
     });
@@ -161,7 +161,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
   const revoke = () =>
     policy?.mandate_id &&
     runAction("revoke", async () => {
-      await api.revokePolicy(policy.mandate_id!);
+      await api.revokePolicy();
       setPolicy({ ...policy, status: "revoked" });
       setShowRevoke(false);
       setNotice({ tone: "success", message: "Policy revoked. No new runs can use it." });
@@ -222,20 +222,20 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
         ) : (
           <div className="policy-review">
             <div className="rule-group">
-              <p className="group-label"><ShieldCheck size={16} /> Always enforce</p>
-              {policy.hard_rules.length ? policy.hard_rules.map((rule, index) => (
-                <div className="rule-row" key={`${rule.field}-${index}`}>
+              <p className="group-label"><ShieldCheck size={16} /> Stored with platform</p>
+              {policy.checks.filter((check) => check.stored_with_platform).map((check) => (
+                <div className="rule-row" key={`platform-${check.label}`}>
                   <span className="rule-check"><Check size={15} /></span>
-                  <div>
-                    <strong>{rule.field === "authorization.billing_amount_chf" ? "Purchase limit" : friendlyGuardName(rule.field)}</strong>
-                    <p>{rule.field} {rule.operator} {rule.currency ? `${rule.currency} ` : ""}{String(rule.value)}</p>
-                  </div>
+                  <div><strong>{check.label}</strong><p>{check.detail}</p></div>
                 </div>
-              )) : <p className="muted-block">No hard checks were found.</p>}
-              {policy.guidance.map((item) => (
-                <div className="rule-row" key={item}>
+              ))}
+            </div>
+            <div className="rule-group">
+              <p className="group-label"><ShieldCheck size={16} /> Additionally enforced by engine</p>
+              {policy.checks.filter((check) => !check.stored_with_platform).map((check) => (
+                <div className="rule-row" key={`engine-${check.label}`}>
                   <span className="rule-check"><Check size={15} /></span>
-                  <div><strong>Shopping guidance</strong><p>{item}</p></div>
+                  <div><strong>{check.label}</strong><p>{check.detail}</p></div>
                 </div>
               ))}
             </div>
@@ -245,7 +245,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
                 <div className="question-row" key={question}><AlertTriangle size={17} /><span>{question}</span></div>
               )) : <div className="question-row calm"><CheckCircle2 size={17} /><span>No unresolved questions.</span></div>}
             </div>
-            {policy.status === "draft" && (
+            {(policy.status === "compiled" || policy.status === "draft") && (
               <button className="button button-primary button-full" disabled={busy !== null} onClick={confirm}>
                 {busy === "confirm" ? <RefreshCw className="spin" size={17} /> : <ShieldCheck size={17} />}
                 Confirm policy
@@ -466,11 +466,12 @@ export default function App() {
   const handleStreamEvent = useCallback((event: StreamEvent) => {
     if (event.type === "decision") setDecisions((items) => [event.data, ...items.filter((item) => item.ids.authorization_id !== event.data.ids.authorization_id)]);
     if (event.type === "pending") setPending((items) => [event.data, ...items.filter((item) => item.authorization_id !== event.data.authorization_id)]);
-    if (event.type === "resolved") setPending((items) => items.filter((item) => item.authorization_id !== event.data.authorization_id));
+    if (event.type === "resolution") {
+      setPending((items) => items.filter((item) => item.authorization_id !== event.data.ids.authorization_id));
+      setDecisions((items) => [event.data, ...items.filter((item) => item.ids.authorization_id !== event.data.ids.authorization_id)]);
+    }
     if (event.type === "status") setStatus(event.data);
   }, []);
-
-  const streamConnected = useEventStream(handleStreamEvent);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -486,6 +487,19 @@ export default function App() {
       setLoading(false);
     }
   }, []);
+
+  const refreshLiveData = useCallback(async () => {
+    if (USE_MOCK_API) return;
+    try {
+      const [nextDecisions, nextPending] = await Promise.all([api.decisions(), api.pending()]);
+      setDecisions(nextDecisions);
+      setPending(nextPending);
+    } catch {
+      // EventSource retries automatically; keep the last known state visible meanwhile.
+    }
+  }, []);
+
+  const streamConnected = useEventStream(handleStreamEvent, refreshLiveData);
 
   useEffect(() => { void load(); }, [load]);
 

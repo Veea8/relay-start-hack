@@ -16,14 +16,14 @@ Use `VITE_USE_MOCK_API=false` to connect to the backend. `VITE_API_BASE_URL` may
 The frontend calls these routes through `src/api.ts`:
 
 - `POST /api/policy/compile`
-- `POST /api/policy/confirm`
-- `PATCH` and `DELETE /api/policy/{mandate_id}`
+- `POST /api/policy/draft`, then `POST /api/policy/confirm`
+- `PATCH` and `DELETE /api/policy`
 - `POST /api/run/start`
 - `GET /api/status`, `/api/decisions` and `/api/pending`
 - `POST /api/resolve/{authorization_id}`
 - `GET /api/stream` as a server-sent event stream
 
-The TypeScript wire types are in `src/types.ts`. `DecisionTrace` mirrors the backend model. Stream messages use `{ "type": "decision|pending|resolved|status", "data": ... }`. Repeated decision and pending events are upserted by live authorization ID.
+The TypeScript wire types are in `src/types.ts`. The decisions and pending routes return backend decision records; the adapter exposes their nested `DecisionTrace` values to the screens and uses `human_deadline_at` for the approval countdown. The event stream uses named `status`, `decision`, `resolution`, `run`, `mandate` and `reset` events. The frontend handles the first three directly and reloads authoritative inbox/log data whenever the stream reconnects. Repeated records are upserted by live authorization ID.
 
 The browser talks only to this REST/SSE boundary. It contains no Viseca team key, direct Viseca API calls, policy engine or purchase-decision logic.
 
