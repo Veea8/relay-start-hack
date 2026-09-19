@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
 
     # Connect to the authorization service, where the key stays empty for offline work
-    leash_base_url: str = "https://saw26api.ashyground-364e1d07.switzerlandnorth.azurecontainerapps.io"
+    leash_base_url: str = "https://leash-api-production.up.railway.app"
     team_api_key: str = ""
 
 
