@@ -4,6 +4,7 @@ import type {
   DecisionTrace,
   DecisionRecord,
   EngineStatus,
+  LlmServiceMode,
   PendingAuthorization,
   PolicyDraft,
   StreamEvent,
@@ -31,7 +32,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 interface BackendStatus {
   leash_mode: "offline" | "live";
   engine_mode: "deterministic" | "model" | "degraded";
-  llm_mode: string;
+  llm_mode: LlmServiceMode;
+  llm_model: string | null;
   bootstrap: { scenarios?: Array<Record<string, unknown>> } | null;
   bootstrap_error: string | null;
   worker: { state: string; last_margin_ms: number | null; active_run_ids: string[] };
@@ -77,7 +79,8 @@ export function normalizeStatus(raw: BackendStatus): EngineStatus {
     connected: raw.bootstrap_error === null,
     environment: raw.leash_mode,
     engine_mode: raw.engine_mode,
-    model_name: raw.llm_mode === "off" ? null : raw.llm_mode,
+    llm_mode: raw.llm_mode,
+    model_name: raw.llm_mode === "off" ? null : raw.llm_model,
     latest_margin_ms: raw.worker.last_margin_ms,
     active_run_id: raw.worker.active_run_ids[0] ?? null,
     scenarios: (raw.bootstrap?.scenarios ?? []).map(normalizeScenario).filter((scenario) => scenario.scenario_id !== ""),

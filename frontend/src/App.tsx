@@ -565,7 +565,7 @@ export default function App() {
         </nav>
         <div className="engine-status">
           <span className={`connection-dot ${(status?.connected && streamConnected) ? "online" : "offline"}`} />
-          <div><strong>{environment === "live" ? "Live" : environment === "offline" ? "Offline" : "Prototype"} · {status?.engine_mode === "model" ? status.model_name ?? "Model" : status?.engine_mode === "degraded" ? "Fail-safe" : "Deterministic"}</strong><small>{status?.latest_margin_ms ? `${(status.latest_margin_ms / 1000).toFixed(1)}s margin` : "Waiting for engine"}</small></div>
+          <div><strong>{environment === "live" ? "Live" : environment === "offline" ? "Offline" : "Prototype"} · {status?.llm_mode === "ready" ? status.model_name ?? "Model ready" : status?.llm_mode === "degraded" ? "Model degraded" : "Deterministic"}</strong><small>{status?.latest_margin_ms ? `${(status.latest_margin_ms / 1000).toFixed(1)}s margin` : "Waiting for engine"}</small></div>
         </div>
       </header>
 

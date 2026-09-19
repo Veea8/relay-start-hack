@@ -108,6 +108,7 @@ function trace(
 ): DecisionTrace {
   const decidedAt = new Date(Date.now() - minuteOffset * 60_000);
   const guards = representativeGuards(family, guardVerdict, reason, amount, threshold);
+  const llmMode = decision === "decline" ? "live" : decision === "step_up" ? "degraded" : "off";
   return {
     trace_version: "1",
     engine_version: "relay-0.1.0",
@@ -144,7 +145,16 @@ function trace(
       raised_by: reason ? [reason.toLowerCase()] : [],
       uncertainty_policy_applied: guardVerdict === "UNCERTAIN",
     },
-    llm: { mode: "off", calls: [] },
+    llm: {
+      mode: llmMode,
+      calls: llmMode === "off" ? [] : [{
+        purpose: "fact_extraction",
+        status: llmMode === "live" ? "success" : "provider_error",
+        provider: "swisscom-apertus",
+        model: "Apertus",
+        elapsed_ms: llmMode === "live" ? 418 : 2010,
+      }],
+    },
     timings: { total_ms: 1.176 },
     resolution: null,
     trust: mockTrust(guards, decision, trustSummary, trustDeductions),
@@ -239,7 +249,8 @@ export const mockStatus: EngineStatus = {
   connected: true,
   environment: "mock",
   engine_mode: "deterministic",
-  model_name: null,
+  llm_mode: "ready",
+  model_name: "Apertus",
   latest_margin_ms: 7824,
   active_run_id: "RUN-DEMO-0001",
   scenarios: [

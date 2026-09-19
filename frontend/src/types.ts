@@ -1,4 +1,6 @@
 export type Decision = "approve" | "decline" | "step_up";
+export type LlmTraceMode = "off" | "live" | "degraded";
+export type LlmServiceMode = "off" | "ready" | "degraded";
 export type GuardVerdict = "PASS" | "STEP_UP" | "DECLINE" | "UNCERTAIN" | "SKIP";
 export type GuardFamily =
   | "Spending limits"
@@ -98,7 +100,7 @@ export interface DecisionTrace {
     raised_by: string[];
     uncertainty_policy_applied: boolean;
   };
-  llm: { mode: string; calls: Record<string, unknown>[] };
+  llm: { mode: LlmTraceMode; calls: Record<string, unknown>[] };
   timings: { total_ms: number };
   resolution: Record<string, unknown> | null;
   // Filled by the adapter from the record's trust_score; absent on a trace that predates the score.
@@ -148,6 +150,7 @@ export interface EngineStatus {
   connected: boolean;
   environment: "mock" | "offline" | "live";
   engine_mode: "deterministic" | "model" | "degraded";
+  llm_mode: LlmServiceMode;
   model_name: string | null;
   latest_margin_ms: number | null;
   active_run_id: string | null;

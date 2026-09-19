@@ -109,14 +109,21 @@ describe("Jonas web API adapters", () => {
       leash_mode: "offline",
       engine_mode: "deterministic",
       llm_mode: "off",
+      llm_model: null,
       bootstrap: { scenarios: [{ scenario_id: "SCEN0001", name: "Groceries", event_count: 10 }] },
       bootstrap_error: null,
       worker: { state: "polling", last_margin_ms: 7123, active_run_ids: ["RUN-1"] },
     });
     expect(status.connected).toBe(true);
     expect(status.environment).toBe("offline");
+    expect(status.llm_mode).toBe("off");
     expect(status.latest_margin_ms).toBe(7123);
     expect(status.scenarios).toEqual([{ scenario_id: "SCEN0001", name: "Groceries", purchase_count: 10 }]);
+  });
+
+  it("keeps live and degraded model modes from backend decision traces", () => {
+    expect(traceFromRecord({ ...record, trace: { ...trace, llm: { mode: "live", calls: [{ status: "success" }] } } }).llm.mode).toBe("live");
+    expect(traceFromRecord({ ...record, trace: { ...trace, llm: { mode: "degraded", calls: [{ status: "timeout" }] } } }).llm.mode).toBe("degraded");
   });
 
   it("restores a confirmed mandate and its compiled checks", () => {
