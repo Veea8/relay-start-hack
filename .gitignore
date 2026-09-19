@@ -49,3 +49,7 @@ CLAUDE.md
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local decision store of the backend
+outputs/state/
+outputs/audit/offline/

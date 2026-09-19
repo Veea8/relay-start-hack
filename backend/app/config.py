@@ -66,6 +66,30 @@ class Settings(BaseSettings):
 
 
 
+    # Keep a reserve of the decision deadline for sending the answer, and say how long one long poll may wait
+    post_reserve_ms: int = Field(default = 1500, gt = 0)
+    long_poll_wait_seconds: int = Field(default = 25, ge = 1, le = 25)
+
+
+
+    # Choose the platform the worker talks to, the live service or the in-process copy fed by the public purchases,
+    # and whether the worker polls from the start or only while a run started through the web API is open
+    leash_mode: Literal["live", "offline"] = "live"
+    worker_autostart: bool = False
+
+
+
+    # Locate the decision store and the audit folder, where an empty value means the default under outputs/
+    state_db_path: str = ""
+    audit_folder: str = ""
+
+
+
+    # Allow the interface at these origins to call the web API, as a comma-separated list
+    web_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+
+
     # Choose what happens when a one-time goal was already bought, and when merchant text tries to instruct the agent
     goal_fulfilled_action: Literal["off", "note", "step_up"] = "note"
     injection_action: Literal["step_up", "decline"] = "step_up"
@@ -90,3 +114,28 @@ class Settings(BaseSettings):
 @lru_cache(maxsize = None)
 def get_settings():
     return Settings()
+
+
+
+# Locate the repository root, which holds outputs/ and data/
+REPOSITORY_FOLDER = BACKEND_FOLDER.parent
+
+
+
+# Resolve the path of the decision store, which defaults to outputs/state/relay.sqlite3
+def resolve_state_db_path(settings = None):
+    if settings is None:
+        settings = get_settings()
+    if settings.state_db_path == "":
+        return REPOSITORY_FOLDER / "outputs" / "state" / "relay.sqlite3"
+    return Path(settings.state_db_path)
+
+
+
+# Resolve the audit folder, which defaults to outputs/audit
+def resolve_audit_folder(settings = None):
+    if settings is None:
+        settings = get_settings()
+    if settings.audit_folder == "":
+        return REPOSITORY_FOLDER / "outputs" / "audit"
+    return Path(settings.audit_folder)
