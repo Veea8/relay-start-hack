@@ -10,6 +10,8 @@ import httpx
 import pytest
 
 from app.api_client.leash import LeashApiError
+from app.engine.pipeline import decide
+from app.llm.schemas import ExtractedFacts, ExtractedLine, ModelCallRecord, ModelExtraction
 from app.service import ServiceError
 from platform_helpers import (
     FakeClock,
@@ -26,6 +28,100 @@ from platform_helpers import (
 
 # State a rule that stores the limit of the instruction with the platform
 LIMIT_RULE = {"field": "authorization.billing_amount_chf", "operator": "<=", "value": 20, "currency": "CHF", "scope": "purchase"}
+
+
+
+class StubTransport:
+    provider = "test-provider"
+    model = "test-model"
+
+
+
+class SuccessfulExtractor:
+    transport = StubTransport()
+
+    def __init__(self, clock = None):
+        self.clock = clock
+
+    async def extract(self, event):
+        if self.clock is not None:
+            self.clock.advance(2)
+        return ModelExtraction(
+            facts = ExtractedFacts(
+                lines = tuple(ExtractedLine(line_no = item.line_no, product_kind = "grocery") for item in event.authorization.items),
+                injection_suspected = False,
+            ),
+            call = ModelCallRecord(
+                purpose = "fact_extraction", status = "success", provider = "test-provider", model = "test-model", elapsed_ms = 1,
+            ),
+        )
+
+
+
+class BrokenExtractor:
+    transport = StubTransport()
+
+    async def extract(self, event):
+        raise RuntimeError("model unavailable")
+
+
+
+# The optional extraction is passed to the engine, and its elapsed time comes out of the engine budget rather than the post reserve
+def test_model_extraction_is_passed_inside_the_engine_budget(tmp_path, monkeypatch):
+    async def scenario():
+        clock = FakeClock()
+        seen = {}
+
+        def recording_decide(event, policy, state, extracted_facts = None):
+            seen["extraction"] = extracted_facts
+            return decide(event, policy, state)
+
+        original_wait_for = asyncio.wait_for
+
+        async def recording_wait_for(awaitable, timeout):
+            seen["timeout"] = timeout
+            return await original_wait_for(awaitable, timeout)
+
+        monkeypatch.setattr(asyncio, "wait_for", recording_wait_for)
+        platform = build_test_platform({"SCEN0000": build_test_scenario([20.0])}, clock = clock)
+        service = build_test_service(
+            platform, tmp_path, clock = clock, decide_function = recording_decide,
+            fact_extractor = SuccessfulExtractor(clock),
+        )
+        await confirm_and_start(service, "SCEN0000")
+        record = await service.worker.handle_envelope(await fetch_envelope(service))
+        assert record["decision"] == "approve"
+        assert seen["extraction"].call.status == "success"
+        assert seen["extraction"].facts.lines[0].product_kind == "grocery"
+        assert seen["timeout"] == pytest.approx(4.0)
+        await service.client.close()
+
+    run_async(scenario())
+
+
+
+# An unexpected extractor failure becomes degraded model evidence and never becomes the engine's GUARD_ERROR fallback
+def test_extractor_error_is_contained_before_the_engine(tmp_path):
+    async def scenario():
+        seen = {}
+
+        def recording_decide(event, policy, state, extracted_facts = None):
+            seen["extraction"] = extracted_facts
+            return decide(event, policy, state)
+
+        platform = build_test_platform({"SCEN0000": build_test_scenario([20.0])})
+        service = build_test_service(
+            platform, tmp_path, decide_function = recording_decide, fact_extractor = BrokenExtractor(),
+        )
+        await confirm_and_start(service, "SCEN0000")
+        record = await service.worker.handle_envelope(await fetch_envelope(service))
+        assert record["decision"] == "approve" and "GUARD_ERROR" not in record["reason_codes"]
+        assert seen["extraction"].facts is None
+        assert seen["extraction"].call.status == "provider_error"
+        assert seen["extraction"].call.error_type == "RuntimeError"
+        await service.client.close()
+
+    run_async(scenario())
 
 
 

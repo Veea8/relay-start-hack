@@ -170,7 +170,7 @@ def build_test_settings(**overrides):
 
 
 # Build a service around a test platform, with the store in memory and the audit files in a temporary folder
-def build_test_service(platform, audit_folder, settings = None, clock = None, decide_function = None):
+def build_test_service(platform, audit_folder, settings = None, clock = None, decide_function = None, fact_extractor = None):
     if settings is None:
         settings = build_test_settings()
     store = DecisionStore(":memory:")
@@ -182,6 +182,7 @@ def build_test_service(platform, audit_folder, settings = None, clock = None, de
         read_clock = clock.read if clock is not None else None,
         decide_function = decide_function,
         source = "offline",
+        fact_extractor = fact_extractor,
     )
     return RelayService(settings, store, client, audit_log, broadcaster, worker, platform)
 

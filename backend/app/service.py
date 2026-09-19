@@ -12,6 +12,7 @@ from app.api_client.offline import build_offline_platform
 from app.config import get_settings, resolve_audit_folder, resolve_state_db_path
 from app.llm.breaker import CircuitState
 from app.llm.client import OpenAICompatibleTransport
+from app.llm.extractor import FactExtractor
 from app.llm.policy_compiler import PolicyModelCompiler
 from app.models.decision import ENGINE_VERSION
 from app.policyc.compiler import build_policy_from_mandate
@@ -112,8 +113,8 @@ class RelayService:
         else:
             client = LeashClient(settings.leash_base_url, settings.team_api_key)
             source = "live"
-        worker = DecisionWorker(client, store, audit_log, broadcaster, settings, source = source)
         policy_model_compiler = None
+        fact_extractor = None
         if settings.llm_model != "" and settings.llm_api_key != "":
             provider = "swisscom-apertus" if "swisscom" in settings.llm_base_url.casefold() else "openai"
             model_transport = OpenAICompatibleTransport(
@@ -123,6 +124,8 @@ class RelayService:
                 initial_api_key = settings.llm_api_key,
             )
             policy_model_compiler = PolicyModelCompiler(model_transport)
+            fact_extractor = FactExtractor(model_transport, timeout_seconds = settings.llm_budget_ms / 1000)
+        worker = DecisionWorker(client, store, audit_log, broadcaster, settings, source = source, fact_extractor = fact_extractor)
         return cls(settings, store, client, audit_log, broadcaster, worker, platform, policy_model_compiler)
 
 

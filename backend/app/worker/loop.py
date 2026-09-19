@@ -6,6 +6,7 @@
 import asyncio
 import hashlib
 import json
+import time
 import traceback
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_EVEN, Decimal
@@ -14,6 +15,7 @@ import httpx
 
 from app.api_client.leash import LeashApiError, find_value
 from app.engine.pipeline import decide
+from app.llm.schemas import ModelCallRecord, ModelExtraction
 from app.models.decision import (
     ENGINE_VERSION,
     AggregationRecord,
@@ -317,7 +319,7 @@ def build_request_body_from_record(record, engine_version, include_trust_score =
 # The worker never sends a human answer, and it never approves when the engine could not decide.
 class DecisionWorker:
 
-    def __init__(self, client, store, audit_log, broadcaster, settings, read_clock = None, decide_function = None, policy_builder = None, source = "live"):
+    def __init__(self, client, store, audit_log, broadcaster, settings, read_clock = None, decide_function = None, policy_builder = None, source = "live", fact_extractor = None):
         self.client = client
         self.store = store
         self.audit_log = audit_log
@@ -327,6 +329,7 @@ class DecisionWorker:
         self.decide_function = decide_function if decide_function is not None else decide
         self.policy_builder = policy_builder if policy_builder is not None else build_policy_from_mandate
         self.source = source
+        self.fact_extractor = fact_extractor
 
 
 
@@ -697,7 +700,30 @@ class DecisionWorker:
 
 
 
-    # Run the engine in a thread under the time left, and build the fallback record when it is late or fails
+    # Ask the optional model for facts, containing every failure in its call record so it can never become a guard error
+    async def extract_facts(self, event):
+        if self.fact_extractor is None:
+            return None
+        started_at = time.perf_counter()
+        try:
+            return await self.fact_extractor.extract(event)
+        except Exception as extraction_error:
+            transport = getattr(self.fact_extractor, "transport", None)
+            return ModelExtraction(
+                facts = None,
+                call = ModelCallRecord(
+                    purpose = "fact_extraction",
+                    status = "provider_error",
+                    provider = str(getattr(transport, "provider", "unknown")),
+                    model = str(getattr(transport, "model", "unknown")),
+                    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3),
+                    error_type = type(extraction_error).__name__,
+                ),
+            )
+
+
+
+    # Run the optional extraction first and the engine in a thread under the time left, and build the fallback record when the engine is late or fails
     async def decide_within_budget(self, event, received_at, run_id):
         policy = self.policy_for(event.mandate)
         budget = DeadlineBudget(
@@ -706,10 +732,16 @@ class DecisionWorker:
             engine_budget_ms = self.settings.engine_budget_ms,
             post_reserve_ms = self.settings.post_reserve_ms,
         )
+        extracted_facts = await self.extract_facts(event)
         seconds_left = budget.seconds_left_for_engine(self.read_clock())
         try:
+            decision_arguments = (event, policy, self.build_decision_state(event, run_id))
+            if extracted_facts is None:
+                decision_call = asyncio.to_thread(self.decide_function, *decision_arguments)
+            else:
+                decision_call = asyncio.to_thread(self.decide_function, *decision_arguments, extracted_facts = extracted_facts)
             return await asyncio.wait_for(
-                asyncio.to_thread(self.decide_function, event, policy, self.build_decision_state(event, run_id)),
+                decision_call,
                 timeout = seconds_left,
             )
         except asyncio.TimeoutError:
