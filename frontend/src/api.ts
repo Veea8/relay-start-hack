@@ -1,5 +1,6 @@
 import { mockDecisions, mockPending, mockPolicy, mockStatus } from "./mockData";
 import type {
+  Decision,
   DecisionTrace,
   DecisionRecord,
   EngineStatus,
@@ -95,8 +96,13 @@ function fallbackTrace(record: DecisionRecord): DecisionTrace {
   };
 }
 
+// The store status of a record is its outcome: a question the customer answered shows the answer, not the engine's step_up.
+const outcomeOf = (record: DecisionRecord): Decision =>
+  record.status === "approved" ? "approve" : record.status === "declined" ? "decline" : record.decision;
+
 export function traceFromRecord(record: DecisionRecord) {
-  return record.trace ? { ...record.trace, resolution: record.resolution } : fallbackTrace(record);
+  const decision = outcomeOf(record);
+  return record.trace ? { ...record.trace, decision, resolution: record.resolution } : fallbackTrace({ ...record, decision });
 }
 
 export function pendingFromRecord(record: DecisionRecord): PendingAuthorization {

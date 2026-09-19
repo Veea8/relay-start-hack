@@ -71,6 +71,16 @@ describe("Jonas web API adapters", () => {
     expect(invalid.reason_codes).toEqual(["INVALID_EVENT"]);
   });
 
+  it("shows the customer's answer as the outcome once a question is resolved", () => {
+    const answered = traceFromRecord({ ...record, status: "approved", resolution: { decision: "approve", resolved_at: "2026-09-19T07:01:30Z" } });
+    expect(answered.decision).toBe("approve");
+    expect(answered.reason_codes).toEqual(["SMALL_OVERSHOOT"]);
+    expect(answered.resolution).toEqual({ decision: "approve", resolved_at: "2026-09-19T07:01:30Z" });
+    expect(traceFromRecord({ ...record, status: "declined" }).decision).toBe("decline");
+    expect(traceFromRecord({ ...record, status: "expired" }).decision).toBe("step_up");
+    expect(traceFromRecord({ ...record, trace: null, status: "approved" }).decision).toBe("approve");
+  });
+
   it("reads scenarios and the deadline margin from the nested status response", () => {
     const status = normalizeStatus({
       leash_mode: "offline",
