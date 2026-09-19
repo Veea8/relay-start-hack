@@ -1,10 +1,10 @@
 # Business impact — three-way comparison
 
-Generated 2026-09-19 10:21 UTC.
+Generated 2026-09-19 11:30 UTC.
 
 ## Presentation headline
 
-**On this synthetic test set, per 1,000 agent purchases, Relay has about CHF 7,718.96 more expected issuer value than a plain spending limit.**
+**On this synthetic test set, per 1,000 agent purchases, Relay has about CHF 9,336.63 more expected issuer value than a plain spending limit.**
 
 This is a scenario-model result, not a forecast of real customer behaviour. Replace the assumptions below with Viseca figures before presenting it as a business estimate.
 
@@ -14,7 +14,7 @@ This is a scenario-model result, not a forecast of real customer behaviour. Repl
 | --- | ---: | ---: | ---: | ---: |
 | No control | 45 of 45 | CHF 8,925.73 | 0 of 28 | 0 of 17 |
 | Plain spending limit | 39 of 45 | CHF 7,199.73 | 6 of 28 | 0 of 17 |
-| Relay | 25 of 45 | CHF 4,423.45 | 20 of 28 | 0 of 17 |
+| Relay | 17 of 45 | CHF 3,026.45 | 28 of 28 | 0 of 17 |
 
 A purchase needs intervention when its reviewed `decision_on_own_facts` is `decline` or `step_up`. Both a decline and a question count as an intervention; an approval does not.
 
@@ -24,7 +24,7 @@ A purchase needs intervention when its reviewed `decision_on_own_facts` is `decl
 | --- | ---: | ---: | ---: |
 | No control | −CHF 452.55 | −CHF 10,056.65 | −CHF 1,728.83 |
 | Plain spending limit | −CHF 374.75 | −CHF 8,327.81 | CHF 0.00 |
-| Relay | −CHF 27.40 | −CHF 608.85 | CHF 7,718.96 |
+| Relay | CHF 45.40 | CHF 1,008.82 | CHF 9,336.63 |
 
 Value formula per purchase:
 
@@ -68,5 +68,5 @@ The 45-purchase value is scaled by `1000 / 45`. A question is conservatively tre
 
 - No control: `outputs/replay/all_none_20260919-004448.jsonl`
 - Plain spending limit: `outputs/replay/all_limit_only_20260919-082917.jsonl`
-- Relay: `outputs/replay/all_engine_20260919-092210.jsonl`
+- Relay: `outputs/replay/all_engine_20260919-112319.jsonl`
 - Reviewed verdicts: `data/processed/purchase_verdicts.csv`
