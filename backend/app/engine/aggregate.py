@@ -45,6 +45,12 @@ SEVERITY_BY_UNCERTAINTY_POLICY = {
 
 
 
+# Name the reasons that report a failure of the engine itself, which are a guard that broke and a memory of the run that is missing.
+# Neither is a doubt about the purchase, so neither may ever approve.
+ENGINE_FAILURE_REASON_CODES = (ReasonCode.GUARD_ERROR, ReasonCode.LEDGER_UNAVAILABLE)
+
+
+
 # Map the uncertainty policy to the lowest severity of a guard that failed, which is never approve
 GUARD_ERROR_SEVERITY_BY_UNCERTAINTY_POLICY = {
     "ask": Decision.STEP_UP,
@@ -89,8 +95,8 @@ def measure_result_severity(guard_result, uncertainty_policy):
 
 
 
-    # Lift a failed guard to at least step_up, so a failure never approves whatever the policy says
-    if guard_result.reason_code == ReasonCode.GUARD_ERROR:
+    # Lift a failure of the engine to at least step_up, so a failure never approves whatever the policy says
+    if guard_result.reason_code in ENGINE_FAILURE_REASON_CODES:
         return pick_higher_severity(verdict_severity, GUARD_ERROR_SEVERITY_BY_UNCERTAINTY_POLICY[uncertainty_policy])
     return verdict_severity
 

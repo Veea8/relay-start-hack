@@ -102,6 +102,12 @@ class Settings(BaseSettings):
 
 
 
+    # Set how many minutes apart two orders at the same shop may be and still be put to the customer as one order split in two.
+    # The minutes run on the simulated time of the purchases, and an order exactly that long ago still counts.
+    split_order_window_minutes: int = Field(default = 120, gt = 0)
+
+
+
 
 
 

@@ -45,6 +45,7 @@ from app.engine.guards.registry import build_guard_pipeline, list_placeholder_gu
 from app.engine.pipeline import decide
 from app.models.events import InvalidEventError, read_purchase_message
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_ledger_snapshot_for_event, find_budget_objection
 
 
 
@@ -437,14 +438,15 @@ class ReplayDecision:
 
 
 
-# A decision function takes the typed event and returns a ReplayDecision.
+# A decision function takes the typed event and the earlier purchases of the same run, and returns a ReplayDecision.
 # It judges the purchase on its facts and never reads scenario_id, request_id, any authorization identifier or replay_order.
 # The engine copies identifiers into its decision record for logging and decides nothing with them.
+# The two baselines judge every purchase alone and ignore the earlier purchases.
 
 
 
 # Approve every purchase, which shows what happens without any control
-def decide_with_no_control(event):
+def decide_with_no_control(event, earlier_purchases):
     return ReplayDecision(
         decision = "approve",
         reason_codes = ("NO_CONTROL",),
@@ -464,7 +466,7 @@ def read_order_limit_for_baseline(instruction):
 
 
 # Decline a purchase above the order limit and approve every other purchase, where exactly the limit passes
-def decide_with_order_limit_only(event):
+def decide_with_order_limit_only(event, earlier_purchases):
     order_limit = read_order_limit_for_baseline(event.mandate.instruction)
     billing_amount = Decimal(str(event.authorization.billing_amount_chf))
     if billing_amount > order_limit:
@@ -486,8 +488,8 @@ POLICIES_BY_MANDATE_ID = {}
 
 
 
-# Let the engine decide, with the policy built from the mandate inside the message and no stored state
-def decide_with_engine(event):
+# Let the engine decide, with the policy built from the mandate inside the message and the memory of the run built from its earlier purchases
+def decide_with_engine(event, earlier_purchases):
 
     # Build the policy on the first purchase of a mandate and reuse it afterwards
     mandate_id = event.mandate.mandate_id
@@ -496,8 +498,13 @@ def decide_with_engine(event):
 
 
 
+    # Freeze the earlier purchases of the run as they stand now, so the guards see a snapshot and never the run itself
+    ledger_snapshot = build_ledger_snapshot_for_event(earlier_purchases, event)
+
+
+
     # Run the guard pipeline and hand back the answer together with the full record
-    decision_trace = decide(event, POLICIES_BY_MANDATE_ID[mandate_id], None)
+    decision_trace = decide(event, POLICIES_BY_MANDATE_ID[mandate_id], ledger_snapshot)
     return ReplayDecision(
         decision = decision_trace.decision.value,
         reason_codes = tuple(reason_code.value for reason_code in decision_trace.reason_codes),
@@ -539,8 +546,9 @@ def count_guards_not_built():
 
 #### Step 6: Replay the purchases in order and keep the state of the run ####
 
-# Turn a decision into the final status of the purchase, with the simulated customer answering every step_up
-def resolve_final_status(decision_name, resolve_mode):
+# Turn a decision into the final status of the purchase, with the simulated customer answering every step_up.
+# An approval of the customer goes through only when the budget raises no objection at that moment, and the question stays open otherwise.
+def resolve_final_status(decision_name, resolve_mode, budget_objection = None):
     if decision_name == "approve":
         return "approved"
     if decision_name == "decline":
@@ -548,8 +556,17 @@ def resolve_final_status(decision_name, resolve_mode):
     if resolve_mode == "ask":
         return "pending"
     if resolve_mode == "approve":
-        return "approved"
+        return "approved" if budget_objection is None else "pending"
     return "declined"
+
+
+
+# Check the budget again at the moment the simulated customer approves a question, against the run as it stands then
+def find_objection_to_an_approval(replay_decision, resolve_mode, earlier_purchases, event):
+    if replay_decision.decision != "step_up" or resolve_mode != "approve":
+        return None
+    snapshot_at_the_answer = build_ledger_snapshot_for_event(earlier_purchases, event, keep_later_rows = True)
+    return find_budget_objection(replay_decision.trace, snapshot_at_the_answer)
 
 
 
@@ -591,14 +608,15 @@ def replay_one_scenario(scenario_attempts, cart_lines_by_source_id, decide_purch
 
         # Call the decision function and time it
         started_at = time.perf_counter()
-        replay_decision = decide_purchase(event)
+        replay_decision = decide_purchase(event, run_state.earlier_purchases)
         elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3)
         assert replay_decision.decision in ALLOWED_DECISIONS, "Purchase " + source_authorization_id + " received the unknown decision " + str(replay_decision.decision)
 
 
 
         # Let the simulated customer answer a step_up and remember the outcome for the later purchases
-        final_status = resolve_final_status(replay_decision.decision, resolve_mode)
+        budget_objection = find_objection_to_an_approval(replay_decision, resolve_mode, run_state.earlier_purchases, event)
+        final_status = resolve_final_status(replay_decision.decision, resolve_mode, budget_objection)
         run_state.live_id_by_source_id[source_authorization_id] = live_authorization_id
         run_state.earlier_purchases.append({
             "authorization_id": live_authorization_id,

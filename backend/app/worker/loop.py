@@ -30,6 +30,7 @@ from app.models.decision import (
 )
 from app.models.events import InvalidEventError, read_purchase_message
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_ledger_snapshot_from_records
 from app.worker.budget import DeadlineBudget, read_utc_clock
 
 
@@ -534,7 +535,7 @@ class DecisionWorker:
 
 
         # Decide inside the budget, and fall back to a question or a refusal when the engine is late or fails
-        trace = await self.decide_within_budget(event, received_at)
+        trace = await self.decide_within_budget(event, received_at, run_id)
         record = build_record_from_trace(trace, run_id, event, self.source, self.human_timeout_seconds, self.read_clock())
         self.store.save_decision(record)
         self.counters["decisions"] = self.counters["decisions"] + 1
@@ -621,14 +622,21 @@ class DecisionWorker:
 
 
 
-    # Name the state handed to the engine, which is empty until the ledger fills it
-    def build_decision_state(self, event):
-        return None
+    # Build the state handed to the engine, which is the frozen memory of the earlier purchases of the same run and the same mandate
+    def build_decision_state(self, event, run_id):
+        return build_ledger_snapshot_from_records(
+            records = self.store.list_decisions(run_id = run_id),
+            run_id = run_id,
+            mandate_id = event.authorization.mandate_id,
+            purchase_time = event.authorization.timestamp,
+            shop_identifier = event.authorization.merchant.merchant_id,
+            own_identifier = event.authorization.authorization_id,
+        )
 
 
 
     # Run the engine in a thread under the time left, and build the fallback record when it is late or fails
-    async def decide_within_budget(self, event, received_at):
+    async def decide_within_budget(self, event, received_at, run_id):
         policy = self.policy_for(event.mandate)
         budget = DeadlineBudget(
             received_at = received_at,
@@ -639,7 +647,7 @@ class DecisionWorker:
         seconds_left = budget.seconds_left_for_engine(self.read_clock())
         try:
             return await asyncio.wait_for(
-                asyncio.to_thread(self.decide_function, event, policy, self.build_decision_state(event)),
+                asyncio.to_thread(self.decide_function, event, policy, self.build_decision_state(event, run_id)),
                 timeout = seconds_left,
             )
         except asyncio.TimeoutError:

@@ -16,6 +16,7 @@ from app.llm.policy_compiler import PolicyModelCompiler
 from app.models.decision import ENGINE_VERSION
 from app.policyc.compiler import build_policy_from_mandate
 from app.state.audit import AuditLog
+from app.state.ledger import build_ledger_snapshot_from_records, find_budget_objection, read_ledger_time
 from app.state.store import DecisionStore
 from app.webapi.policy_view import MandateContent, describe_policy
 from app.webapi.sse import EventBroadcaster
@@ -406,9 +407,22 @@ class RelayService:
 
 
 
-    # Check the budget again before an approval is sent, which the ledger will answer once it exists
+    # Check the budget again before an approval is sent, against the run as it stands now, and return the objection as a sentence or None.
+    # A question without a stored decision record, such as one about a message that could not be read, has no budget to check.
     def check_budget_before_approval(self, record):
-        return None
+        purchase_time = read_ledger_time(record.get("sim_timestamp"))
+        if record.get("trace") is None or purchase_time is None:
+            return None
+        snapshot = build_ledger_snapshot_from_records(
+            records = self.store.list_decisions(run_id = record.get("run_id")),
+            run_id = record.get("run_id"),
+            mandate_id = record.get("mandate_id"),
+            purchase_time = purchase_time,
+            shop_identifier = record.get("merchant_id"),
+            own_identifier = record.get("live_authorization_id"),
+            keep_later_rows = True,
+        )
+        return find_budget_objection(record.get("trace"), snapshot)
 
 
 

@@ -14,4 +14,5 @@ dependencies = [
     "httpx",
     "jsonschema",
     "uvicorn",
+    "tzdata",
 ]

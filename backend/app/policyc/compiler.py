@@ -10,6 +10,7 @@ from app.models.policy import Expectations, InternalPolicy, RequestedItem
 from app.policyc.item_scope import read_item_scope
 from app.policyc.merchant_type import read_merchant_type
 from app.policyc.order_limit import read_order_limit
+from app.policyc.period_budget import read_period_budget
 from app.policyc.request_shape import read_request_shape
 from app.state.item_catalogue import get_default_item_catalogue
 
@@ -32,7 +33,7 @@ def build_requested_item(asks_for_one_thing):
 
 
 
-# Copy the instruction, the rules and the uncertainty policy, and read the limit per order, the kinds of goods,
+# Copy the instruction, the rules and the uncertainty policy, and read the limit per order, the budget over a period, the kinds of goods,
 # the shape of the request and the kind of shop from the instruction and the rules.
 # Whatever a reader could not settle becomes an open question for the customer, and every other expectation stays at its default.
 def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_catalogue = None):
@@ -51,8 +52,10 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
 
 
     # Read everything without any model, so the policy is ready at once.
-    # The open questions about the limit come first, then those about the goods, the shape of the request and the kind of shop.
+    # The open questions about the limit per order come first, then those about the budget over a period,
+    # the goods, the shape of the request and the kind of shop.
     order_limit_reading = read_order_limit(mandate.instruction, mandate.hard_rules)
+    period_budget_reading = read_period_budget(mandate.instruction, mandate.hard_rules)
     item_scope_reading = read_item_scope(mandate.instruction, mandate.hard_rules, item_catalogue)
     request_shape_reading = read_request_shape(mandate.instruction)
     merchant_type_reading = read_merchant_type(mandate.instruction, mandate.hard_rules)
@@ -64,6 +67,11 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
             per_order_limit_chf = order_limit_reading.limit_chf,
             per_order_limit_inclusive = order_limit_reading.inclusive,
             per_order_limit_reading = order_limit_reading.reading,
+            period_limit_chf = period_budget_reading.limit_chf,
+            period_days = period_budget_reading.period_days,
+            period_limit_inclusive = period_budget_reading.inclusive,
+            period_limit_reading = period_budget_reading.reading,
+            split_order_window_minutes = get_settings().split_order_window_minutes,
             overshoot_tolerance_share = overshoot_tolerance_share,
             allowed_item_categories = item_scope_reading.allowed_item_categories,
             prohibited_item_categories = item_scope_reading.prohibited_item_categories,
@@ -74,6 +82,7 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
         ),
         open_questions = (
             order_limit_reading.open_questions
+            + period_budget_reading.open_questions
             + item_scope_reading.open_questions
             + request_shape_reading.open_questions
             + merchant_type_reading.open_questions

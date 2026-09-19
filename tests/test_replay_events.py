@@ -22,8 +22,8 @@ from app.models.events import read_purchase_message
 
 #### Step 1: Define the shared helpers and fixtures ####
 
-# Answer step_up on every purchase, to exercise the simulated customer
-def decide_always_step_up(event):
+# Answer step_up on every purchase, to exercise the simulated customer, without looking at the earlier purchases
+def decide_always_step_up(event, earlier_purchases):
     return replay.ReplayDecision(
         decision = "step_up",
         reason_codes = ("STUB_STEP_UP",),
@@ -311,30 +311,34 @@ def test_engine_decides_when_no_baseline_is_named():
 
 
 
-# Check that the engine asks and declines on the order limit, the kind of goods, the extras and the kind of shop, and approves the rest.
-# Three small overshoots and two carts with an extra line outside the instruction ask.
+# Check that the engine asks and declines on the order limit, the budget, a split order, the kind of goods, the extras and the kind of shop, and approves the rest.
+# Three small overshoots of the order limit, one of the budget, three orders that look split in two and two carts with an extra line outside the instruction ask.
 # Three large overshoots, one shop of the wrong kind and one cart with nothing the customer asked for decline.
-def test_engine_asks_and_declines_on_limits_goods_extras_and_the_kind_of_shop(results_with_engine):
+def test_engine_asks_and_declines_on_limits_budget_split_orders_goods_extras_and_the_kind_of_shop(results_with_engine):
     result_table = replay.build_result_table(results_with_engine)
     summary = replay.summarize_replay(result_table)
     assert len(result_table) == 45
-    assert len(list_sources_with_decision(result_table, "approve")) == 35
-    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0007", "AU0018", "AU0021", "AU0034"]
+    assert len(list_sources_with_decision(result_table, "approve")) == 31
+    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0006", "AU0007", "AU0009", "AU0018", "AU0021", "AU0030", "AU0034", "AU0036"]
     assert list_sources_with_decision(result_table, "decline") == ["AU0010", "AU0022", "AU0037", "AU0041", "AU0043"]
     assert "trace" not in result_table.columns
-    assert replay.count_guards_not_built() == (18, 23)
+    assert replay.count_guards_not_built() == (16, 23)
 
     # Expect the reasons of each decision, the strictest first, and no reason on an approval
     reason_codes_by_source_id = dict(zip(result_table["source_authorization_id"], result_table["reason_codes"]))
-    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 35
+    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 31
     assert {source_id: reason_codes for source_id, reason_codes in reason_codes_by_source_id.items() if reason_codes != []} == {
         "AU0004": ["SMALL_OVERSHOOT"],
+        "AU0006": ["SPLIT_ORDER_SUSPECTED"],
         "AU0007": ["OFF_SCOPE_ITEM", "UNREQUESTED_ADDON"],
-        "AU0010": ["OVER_PER_ORDER_LIMIT"],
+        "AU0009": ["SMALL_OVERSHOOT"],
+        "AU0010": ["OVER_PER_ORDER_LIMIT", "OVER_PERIOD_LIMIT"],
         "AU0018": ["OFF_SCOPE_ITEM", "UNREQUESTED_ADDON", "ITEM_SHOP_MISMATCH"],
         "AU0021": ["SMALL_OVERSHOOT"],
         "AU0022": ["MERCHANT_TYPE_MISMATCH"],
+        "AU0030": ["SPLIT_ORDER_SUSPECTED"],
         "AU0034": ["SMALL_OVERSHOOT"],
+        "AU0036": ["SPLIT_ORDER_SUSPECTED"],
         "AU0037": ["OVER_PER_ORDER_LIMIT"],
         "AU0041": ["OVER_PER_ORDER_LIMIT", "UNREQUESTED_ADDON", "OFF_SCOPE_ITEM", "ITEM_SHOP_MISMATCH"],
         "AU0043": ["OFF_SCOPE_ITEM"],
@@ -344,8 +348,8 @@ def test_engine_asks_and_declines_on_limits_goods_extras_and_the_kind_of_shop(re
     assert (result_table.query("decision == 'approve'")["final_status"] == "approved").all()
     assert (result_table.query("decision == 'step_up'")["final_status"] == "pending").all()
     assert (result_table.query("decision == 'decline'")["final_status"] == "declined").all()
-    assert summary["total_approved_chf"] == Decimal("6559.73")
-    assert summary["total_declined_or_pending_chf"] == Decimal("2366.00")
+    assert summary["total_approved_chf"] == Decimal("5933.73")
+    assert summary["total_declined_or_pending_chf"] == Decimal("2992.00")
 
 
 
@@ -461,11 +465,11 @@ def test_comparison_counts_the_matches_of_both_baselines(results_without_control
 
 
 
-# Check that the engine matches 27 of 45 reference decisions with its five built guards
+# Check that the engine matches 30 of 45 reference decisions with its seven built guards
 def test_comparison_counts_the_matches_of_the_engine(results_with_engine):
     compared_with_engine = replay.compare_with_reference_decisions(replay.build_result_table(results_with_engine))
     assert len(compared_with_engine) == 45
-    assert int((compared_with_engine["decision_match"] == "match").sum()) == 27
+    assert int((compared_with_engine["decision_match"] == "match").sum()) == 30
 
 
 
@@ -511,8 +515,8 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     result_table = replay.main(["--scenario", "SCEN0001", "--compare"], output_folder = tmp_path)
     written_names = sorted(written_path.name for written_path in tmp_path.iterdir())
     assert len(result_table) == 10
-    assert len(list_sources_with_decision(result_table, "approve")) == 7
-    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0007"]
+    assert len(list_sources_with_decision(result_table, "approve")) == 5
+    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0006", "AU0007", "AU0009"]
     assert list_sources_with_decision(result_table, "decline") == ["AU0010"]
     assert len(written_names) == 2
     assert written_names[0].startswith("SCEN0001_engine_") and written_names[0].endswith(".jsonl")
@@ -526,6 +530,6 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     # Expect the line about the guards in the printed summary and in the markdown report, and no trace column in the report
     printed_summary = capsys.readouterr().out
     markdown_report = (tmp_path / written_names[1]).read_text(encoding = "utf-8")
-    assert "Guards not built yet - 18 of 23" in printed_summary
-    assert "Guards not built yet - 18 of 23" in markdown_report
+    assert "Guards not built yet - 16 of 23" in printed_summary
+    assert "Guards not built yet - 16 of 23" in markdown_report
     assert "trace_version" not in markdown_report

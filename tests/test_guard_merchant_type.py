@@ -15,6 +15,7 @@ from app.models.decision import Decision, GuardFamily, GuardVerdict, ReasonCode
 from app.models.events import read_purchase_message
 from app.models.policy import Expectations, InternalPolicy
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_empty_ledger_snapshot
 
 
 
@@ -256,7 +257,7 @@ LOOSE_INSTRUCTION = "Buy road-running shoes from a sports shop for at most CHF 2
 def test_instruction_to_decision_end_to_end(example_message, instruction, merchant_category, expected_decision, expected_reason_codes):
     event = build_event(example_message, merchant_category, instruction = instruction)
     policy = build_policy_from_mandate(event.mandate)
-    decision_trace = decide(event, policy, None)
+    decision_trace = decide(event, policy, build_empty_ledger_snapshot(event))
     assert policy.expectations.required_merchant_categories == ("sporting_goods",)
     assert policy.expectations.merchant_category_is_strict is (instruction == STRICT_INSTRUCTION)
     assert decision_trace.decision == expected_decision

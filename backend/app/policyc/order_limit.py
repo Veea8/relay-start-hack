@@ -72,8 +72,9 @@ ORDER_SCOPE_PHRASES = (
 )
 UNIT_SCOPE_PHRASES = ("per night", "a night", "per item", "each item", "per piece", "per person", "per ticket", "per unit")
 PERIOD_SCOPE_PHRASES = (
-    "per day", "a day", "daily", "per week", "a week", "weekly", "per month", "a month", "monthly", "each month",
-    "every month", "per year", "days", "in total", "total", "altogether", "overall", "whole project", "for the project",
+    "per day", "a day", "daily", "per week", "a week", "each week", "every week", "any week", "weekly",
+    "per month", "a month", "monthly", "each month", "every month", "any month", "per year", "a year", "each year", "every year",
+    "yearly", "annually", "days", "weeks", "months", "years", "in total", "total", "altogether", "overall", "whole project", "for the project",
 )
 
 

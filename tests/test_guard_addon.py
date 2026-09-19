@@ -17,6 +17,7 @@ from app.models.decision import Decision, GuardFamily, GuardVerdict, ReasonCode
 from app.models.events import read_purchase_message
 from app.models.policy import Expectations, InternalPolicy, RequestedItem
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_empty_ledger_snapshot
 
 
 
@@ -323,7 +324,7 @@ MONITOR_INSTRUCTION = "Buy the 27-inch monitor I chose for CHF 400 or less. Do n
 def test_monitor_with_a_plan_declines_end_to_end(example_message):
     event = build_event(example_message, (MONITOR_LINE, PLAN_LINE), instruction = MONITOR_INSTRUCTION)
     policy = build_policy_from_mandate(event.mandate)
-    decision_trace = decide(event, policy, None)
+    decision_trace = decide(event, policy, build_empty_ledger_snapshot(event))
     assert event.authorization.merchant.recurring_capable == "false"
     assert policy.expectations.allowed_item_categories == ("electronics",)
     assert policy.expectations.requested_item == RequestedItem(kind_keywords = (), max_quantity = 1, goal_quantity = 1)
@@ -342,7 +343,7 @@ def test_monitor_with_a_plan_declines_end_to_end(example_message):
 # Check that the monitor alone is approved under the same sentence
 def test_monitor_alone_approves_end_to_end(example_message):
     event = build_event(example_message, (MONITOR_LINE,), instruction = MONITOR_INSTRUCTION)
-    decision_trace = decide(event, build_policy_from_mandate(event.mandate), None)
+    decision_trace = decide(event, build_policy_from_mandate(event.mandate), build_empty_ledger_snapshot(event))
     assert decision_trace.decision == Decision.APPROVE
     assert decision_trace.reason_codes == []
 

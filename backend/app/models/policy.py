@@ -67,6 +67,18 @@ class Expectations(FrozenPolicyModel):
 
 
 
+    # Keep how the budget over a period was read, with the same meanings as for the limit per order.
+    # The budget itself is period_limit_chf over period_days, where no number of days means the whole mandate.
+    period_limit_inclusive: bool = True
+    period_limit_reading: Literal["not_stated", "read", "unclear"] = "not_stated"
+
+
+
+    # Keep how many minutes apart two orders at the same shop may be and still count as one order split in two
+    split_order_window_minutes: int = 120
+
+
+
     # Keep the allowed and the prohibited categories, the kind of shop and the requested item.
     # A strict kind of shop means the instruction insists on it, as in "only from", so another kind of shop is refused and not asked about.
     allowed_item_categories: tuple[str, ...] = ()

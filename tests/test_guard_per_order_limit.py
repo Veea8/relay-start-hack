@@ -17,6 +17,7 @@ from app.models.decision import Decision, GuardFamily, GuardVerdict, ReasonCode
 from app.models.events import read_purchase_message
 from app.models.policy import Expectations, InternalPolicy
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_empty_ledger_snapshot
 
 
 
@@ -308,7 +309,7 @@ def test_amount_equal_to_an_exclusive_limit_is_explained(example_message):
 def test_instruction_to_decision_end_to_end(example_message, billing_amount_chf, expected_decision, expected_reason_codes):
     event = build_event(example_message, billing_amount_chf, instruction = "Buy one grocery item for CHF 20 or less.")
     policy = build_policy_from_mandate(event.mandate)
-    decision_trace = decide(event, policy, None)
+    decision_trace = decide(event, policy, build_empty_ledger_snapshot(event))
     assert policy.expectations.per_order_limit_chf == Decimal("20")
     assert decision_trace.decision == expected_decision
     assert decision_trace.reason_codes == expected_reason_codes
@@ -321,7 +322,7 @@ def test_instruction_to_decision_end_to_end(example_message, billing_amount_chf,
 def test_zero_tolerance_end_to_end(example_message):
     event = build_event(example_message, 21.00, instruction = "Buy one grocery item for CHF 20 or less.")
     policy = build_policy_from_mandate(event.mandate, overshoot_tolerance_share = Decimal("0"))
-    assert decide(event, policy, None).decision == Decision.DECLINE
+    assert decide(event, policy, build_empty_ledger_snapshot(event)).decision == Decision.DECLINE
 
 
 

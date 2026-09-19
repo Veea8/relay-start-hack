@@ -17,6 +17,7 @@ from app.models.decision import Decision, GuardFamily, GuardVerdict, ReasonCode
 from app.models.events import read_purchase_message
 from app.models.policy import Expectations, InternalPolicy
 from app.policyc.compiler import build_policy_from_mandate
+from app.state.ledger import build_empty_ledger_snapshot
 
 
 
@@ -384,7 +385,7 @@ def test_shop_text_cannot_move_a_line_into_the_scope(example_message):
 def test_instruction_to_decision_end_to_end(example_message, lines, expected_decision, expected_reason_codes, expected_raised_by):
     event = build_event(example_message, lines, instruction = "Order our household groceries for delivery, at most CHF 120 per order.")
     policy = build_policy_from_mandate(event.mandate)
-    decision_trace = decide(event, policy, None)
+    decision_trace = decide(event, policy, build_empty_ledger_snapshot(event))
     assert policy.expectations.allowed_item_categories == ("groceries", "household")
     assert policy.expectations.prohibited_item_categories == ()
     assert policy.expectations.per_order_limit_chf == Decimal("120")
@@ -398,7 +399,7 @@ def test_instruction_to_decision_end_to_end(example_message, lines, expected_dec
 # Check that the question of the guard reaches the customer through the whole pipeline
 def test_question_reaches_the_customer_end_to_end(example_message):
     event = build_event(example_message, (PRODUCE_LINE, FRAGRANCE_LINE), instruction = "Order our household groceries for delivery, at most CHF 120 per order.")
-    decision_trace = decide(event, build_policy_from_mandate(event.mandate), None)
+    decision_trace = decide(event, build_policy_from_mandate(event.mandate), build_empty_ledger_snapshot(event))
     assert decision_trace.customer_message == (
         "Not covered by your instruction - \"Fragrance and beauty gift\" (cosmetics, CHF 32.00). "
         "Your instruction covers groceries and household. Approve the whole order of CHF 58.00?"
@@ -410,7 +411,7 @@ def test_question_reaches_the_customer_end_to_end(example_message):
 def test_limit_decline_comes_before_the_scope_question(example_message):
     lines = (("27-inch computer monitor", "electronics", 380.00), ("Extended protection plan", "subscriptions", 79.00))
     event = build_event(example_message, lines, billing_amount_chf = 459.00, instruction = "Buy the monitor I chose for CHF 400 or less.")
-    decision_trace = decide(event, build_policy_from_mandate(event.mandate), None)
+    decision_trace = decide(event, build_policy_from_mandate(event.mandate), build_empty_ledger_snapshot(event))
     assert decision_trace.decision == Decision.DECLINE
     assert decision_trace.reason_codes == [ReasonCode.OVER_PER_ORDER_LIMIT, ReasonCode.OFF_SCOPE_ITEM, ReasonCode.UNREQUESTED_ADDON, ReasonCode.ITEM_SHOP_MISMATCH]
     assert decision_trace.aggregation.raised_by == ["per_order_limit"]

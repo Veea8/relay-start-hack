@@ -169,6 +169,20 @@ def test_failed_guard_never_approves(uncertainty_policy, expected_decision):
 
 
 
+# Check that a missing memory of the run never approves either, because it is a failure of the engine and no doubt about the purchase
+@pytest.mark.parametrize(
+    "uncertainty_policy, expected_decision",
+    [("ask", Decision.STEP_UP), ("approve", Decision.STEP_UP), ("decline", Decision.DECLINE)],
+)
+def test_missing_ledger_never_approves(uncertainty_policy, expected_decision):
+    missing_ledger_result = build_result(GuardVerdict.UNCERTAIN, reason_code = ReasonCode.LEDGER_UNAVAILABLE)
+    aggregation_outcome = aggregate([missing_ledger_result], uncertainty_policy)
+    assert aggregation_outcome.decision == expected_decision
+    assert aggregation_outcome.reason_codes == [ReasonCode.LEDGER_UNAVAILABLE]
+    assert aggregation_outcome.aggregation_record.raised_by == ["stub_1"]
+
+
+
 # Check that a failed guard stays above approve whatever verdict it carries
 def test_failed_guard_stays_above_approve_with_every_verdict():
     approving_cases = [
