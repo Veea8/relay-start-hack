@@ -113,16 +113,23 @@ function EmptyState({ icon: Icon, title, detail }: { icon: typeof Inbox; title: 
   );
 }
 
-function PolicyScreen({ status, onRunStarted }: { status: EngineStatus | null; onRunStarted: () => void }) {
+function PolicyScreen({ status, restoredPolicy, onRunStarted }: { status: EngineStatus | null; restoredPolicy: PolicyDraft | null; onRunStarted: () => void }) {
   const [instruction, setInstruction] = useState(
-    "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.",
+    restoredPolicy?.instruction ?? "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.",
   );
-  const [policy, setPolicy] = useState<PolicyDraft | null>(null);
+  const [policy, setPolicy] = useState<PolicyDraft | null>(restoredPolicy);
   const [scenarioId, setScenarioId] = useState("SCEN0000");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [showRevoke, setShowRevoke] = useState(false);
   const [liveRunConfirmed, setLiveRunConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (restoredPolicy) {
+      setInstruction(restoredPolicy.instruction);
+      setPolicy(restoredPolicy);
+    }
+  }, [restoredPolicy]);
 
   async function runAction(key: string, action: () => Promise<void>) {
     setBusy(key);
@@ -474,6 +481,7 @@ export default function App() {
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [decisions, setDecisions] = useState<DecisionTrace[]>([]);
   const [pending, setPending] = useState<PendingAuthorization[]>([]);
+  const [currentPolicy, setCurrentPolicy] = useState<PolicyDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -491,10 +499,11 @@ export default function App() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [nextStatus, nextDecisions, nextPending] = await Promise.all([api.status(), api.decisions(), api.pending()]);
+      const [nextStatus, nextDecisions, nextPending, nextPolicy] = await Promise.all([api.status(), api.decisions(), api.pending(), api.currentPolicy()]);
       setStatus(nextStatus);
       setDecisions(nextDecisions);
       setPending(nextPending);
+      setCurrentPolicy(nextPolicy);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Relay could not load current data.");
     } finally {
@@ -573,7 +582,7 @@ export default function App() {
           <div className="load-error"><TriangleAlert size={24} /><h2>Relay is temporarily unavailable</h2><p>{loadError}</p><button className="button button-secondary" onClick={() => void load()}><RefreshCw size={17} />Try again</button></div>
         ) : loading ? <LoadingRows /> : (
           <>
-            <div hidden={screen !== "policy"}><PolicyScreen status={status} onRunStarted={() => navigate("inbox")} /></div>
+            <div hidden={screen !== "policy"}><PolicyScreen status={status} restoredPolicy={currentPolicy} onRunStarted={() => navigate("inbox")} /></div>
             <div hidden={screen !== "inbox"}><InboxScreen pending={pending} onResolve={resolveAuthorization} /></div>
             <div hidden={screen !== "log"}><LogScreen decisions={decisions} /></div>
           </>

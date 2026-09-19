@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizeStatus, pendingFromRecord, traceFromRecord } from "./api";
+import { normalizeCurrentPolicy, normalizeStatus, pendingFromRecord, traceFromRecord } from "./api";
+import { mockPolicy } from "./mockData";
 import type { DecisionRecord, DecisionTrace } from "./types";
 
 const trace: DecisionTrace = {
@@ -94,5 +95,29 @@ describe("Jonas web API adapters", () => {
     expect(status.environment).toBe("offline");
     expect(status.latest_margin_ms).toBe(7123);
     expect(status.scenarios).toEqual([{ scenario_id: "SCEN0001", name: "Groceries", purchase_count: 10 }]);
+  });
+
+  it("restores a confirmed mandate and its compiled checks", () => {
+    const restored = normalizeCurrentPolicy({
+      mandate: {
+        mandate_id: "TM-1",
+        draft_id: "TD-1",
+        status: "active",
+        instruction: mockPolicy.instruction,
+        hard_rules: mockPolicy.hard_rules,
+        uncertainty_policy: "ask",
+      },
+      policy: {
+        instruction: mockPolicy.instruction,
+        hard_rules: mockPolicy.hard_rules,
+        uncertainty_policy: "ask",
+        open_questions: mockPolicy.open_questions,
+        checks: mockPolicy.checks,
+      },
+      policy_error: null,
+    });
+    expect(restored?.mandate_id).toBe("TM-1");
+    expect(restored?.status).toBe("active");
+    expect(restored?.checks).toEqual(mockPolicy.checks);
   });
 });

@@ -37,6 +37,33 @@ interface BackendStatus {
   worker: { state: string; last_margin_ms: number | null; active_run_ids: string[] };
 }
 
+interface CurrentPolicyResponse {
+  mandate: {
+    mandate_id: string;
+    draft_id?: string;
+    status: "active" | "revoked";
+    instruction: string;
+    hard_rules: PolicyDraft["hard_rules"];
+    uncertainty_policy: PolicyDraft["uncertainty_policy"];
+  };
+  policy: Omit<PolicyDraft, "draft_id" | "mandate_id" | "status" | "guidance"> | null;
+  policy_error: string | null;
+}
+
+export function normalizeCurrentPolicy(response: CurrentPolicyResponse): PolicyDraft | null {
+  if (response.policy === null) return null;
+  return {
+    ...response.policy,
+    draft_id: response.mandate.draft_id,
+    mandate_id: response.mandate.mandate_id,
+    status: response.mandate.status,
+    instruction: response.mandate.instruction,
+    hard_rules: response.mandate.hard_rules,
+    uncertainty_policy: response.mandate.uncertainty_policy,
+    guidance: [],
+  };
+}
+
 function normalizeScenario(raw: Record<string, unknown>) {
   return {
     scenario_id: String(raw.scenario_id ?? raw.id ?? ""),
@@ -115,6 +142,17 @@ export function pendingFromRecord(record: DecisionRecord): PendingAuthorization 
 }
 
 export const api = {
+  async currentPolicy(): Promise<PolicyDraft | null> {
+    if (USE_MOCK_API) return null;
+    const response = await fetch(`${API_BASE_URL}/api/policy`, { headers: { "Content-Type": "application/json" } });
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+      throw new Error(body?.error?.message || `Request failed with status ${response.status}`);
+    }
+    return normalizeCurrentPolicy(await response.json() as CurrentPolicyResponse);
+  },
+
   async status(): Promise<EngineStatus> {
     if (USE_MOCK_API) {
       await wait();
