@@ -6,10 +6,11 @@ import App from "./App";
 describe("Relay interface", () => {
   it("loads all three customer screens and mock decisions", async () => {
     render(<App />);
-    expect(await screen.findByRole("heading", { name: /set the boundaries/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "RainThread" })).toBeInTheDocument();
+    expect(screen.getByText(/prototype data/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getAllByRole("button", { name: /approval inbox/i })[0]);
-    expect(await screen.findByText("RainThread")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: /^policy$/i })[0]);
+    expect(await screen.findByRole("heading", { name: /set the boundaries/i })).toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole("button", { name: /decision log/i })[0]);
     expect(await screen.findByText("Giftly Market")).toBeInTheDocument();
@@ -18,6 +19,7 @@ describe("Relay interface", () => {
 
   it("compiles and confirms a policy", async () => {
     render(<App />);
+    await userEvent.click((await screen.findAllByRole("button", { name: /^policy$/i }))[0]);
     await screen.findByRole("heading", { name: /set the boundaries/i });
     await userEvent.click(screen.getByRole("button", { name: /build policy/i }));
     expect(await screen.findByText("Limit per order")).toBeInTheDocument();
@@ -27,9 +29,8 @@ describe("Relay interface", () => {
 
   it("resolves a pending purchase only once", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: /set the boundaries/i });
-    await userEvent.click(screen.getAllByRole("button", { name: /approval inbox/i })[0]);
     await userEvent.click(await screen.findByRole("button", { name: /approve once/i }));
+    expect(await screen.findByText(/audit log has been updated/i)).toBeInTheDocument();
     expect(await screen.findByText(/all caught up/i)).toBeInTheDocument();
   });
 });

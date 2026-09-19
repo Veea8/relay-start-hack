@@ -28,6 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 interface BackendStatus {
+  leash_mode: "offline" | "live";
   engine_mode: "deterministic" | "model" | "degraded";
   llm_mode: string;
   bootstrap: { scenarios?: Array<Record<string, unknown>> } | null;
@@ -46,6 +47,7 @@ function normalizeScenario(raw: Record<string, unknown>) {
 export function normalizeStatus(raw: BackendStatus): EngineStatus {
   return {
     connected: raw.bootstrap_error === null,
+    environment: raw.leash_mode,
     engine_mode: raw.engine_mode,
     model_name: raw.llm_mode === "off" ? null : raw.llm_mode,
     latest_margin_ms: raw.worker.last_margin_ms,

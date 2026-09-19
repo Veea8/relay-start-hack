@@ -110,6 +110,7 @@ export interface Scenario {
 
 export interface EngineStatus {
   connected: boolean;
+  environment: "mock" | "offline" | "live";
   engine_mode: "deterministic" | "model" | "degraded";
   model_name: string | null;
   latest_margin_ms: number | null;

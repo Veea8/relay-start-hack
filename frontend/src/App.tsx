@@ -113,7 +113,7 @@ function EmptyState({ icon: Icon, title, detail }: { icon: typeof Inbox; title: 
   );
 }
 
-function PolicyScreen({ status }: { status: EngineStatus | null }) {
+function PolicyScreen({ status, onRunStarted }: { status: EngineStatus | null; onRunStarted: () => void }) {
   const [instruction, setInstruction] = useState(
     "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.",
   );
@@ -122,6 +122,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [showRevoke, setShowRevoke] = useState(false);
+  const [liveRunConfirmed, setLiveRunConfirmed] = useState(false);
 
   async function runAction(key: string, action: () => Promise<void>) {
     setBusy(key);
@@ -172,6 +173,7 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
     runAction("run", async () => {
       const result = await api.startRun(scenarioId, policy.mandate_id!);
       setNotice({ tone: "success", message: `Run ${result.run_id} started. New decisions will appear in the log.` });
+      onRunStarted();
     });
 
   return (
@@ -269,10 +271,16 @@ function PolicyScreen({ status }: { status: EngineStatus | null }) {
                 ))}
               </select>
             </label>
-            <button className="button button-primary" disabled={busy !== null} onClick={startRun}>
-              <Activity size={17} /> {busy === "run" ? "Starting…" : "Start run"}
+            <button className="button button-primary" disabled={busy !== null || (status?.environment === "live" && !liveRunConfirmed)} onClick={startRun}>
+              <Activity size={17} /> {busy === "run" ? "Starting…" : status?.environment === "live" ? "Start live run" : "Start offline run"}
             </button>
           </div>
+          {status?.environment === "live" && (
+            <label className="live-run-confirmation">
+              <input type="checkbox" checked={liveRunConfirmed} onChange={(event) => setLiveRunConfirmed(event.target.checked)} />
+              I am the designated operator and this run is coordinated with the team.
+            </label>
+          )}
           <div className="policy-actions">
             <button className="button button-secondary" disabled={busy !== null || policy.uncertainty_policy === "decline"} onClick={tighten}>
               <ShieldCheck size={17} /> {policy.uncertainty_policy === "decline" ? "Strict mode active" : "Tighten policy"}
@@ -315,17 +323,22 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
 
   const minutes = Math.floor(seconds / 60);
   const remainder = String(seconds % 60).padStart(2, "0");
-  return <span className={`countdown ${seconds < 30 ? "urgent" : ""}`}><Clock3 size={15} /> {seconds ? `${minutes}:${remainder}` : "Expired"}</span>;
+  return <span className={`countdown ${seconds < 30 ? "urgent" : ""}`} aria-label={seconds ? `${seconds} seconds left to answer` : "Answer window expired"}><Clock3 size={18} /><small>{seconds ? "Answer within" : "Answer window"}</small><strong>{seconds ? `${minutes}:${remainder}` : "Expired"}</strong></span>;
 }
 
 function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; onResolve: (id: string, decision: "approve" | "decline") => Promise<void> }) {
   const [resolving, setResolving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
 
   async function resolve(id: string, decision: "approve" | "decline") {
     setResolving(id);
     setError(null);
-    try { await onResolve(id, decision); }
+    setConfirmation(null);
+    try {
+      await onResolve(id, decision);
+      setConfirmation(`Purchase ${decision === "approve" ? "approved once" : "declined"}. The audit log has been updated.`);
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send your answer."); }
     finally { setResolving(null); }
   }
@@ -337,6 +350,7 @@ function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; 
         <span className="inbox-count">{pending.length} open</span>
       </section>
       {error && <div className="notice notice-error"><XCircle size={17} />{error}</div>}
+      {confirmation && <div className="notice notice-success" role="status"><CheckCircle2 size={17} />{confirmation}</div>}
       {!pending.length ? (
         <section className="panel"><EmptyState icon={Inbox} title="You're all caught up" detail="Any purchase that needs your decision will appear here instantly." /></section>
       ) : (
@@ -362,8 +376,8 @@ function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; 
                   <strong>{trace.reason_codes.map(friendlyGuardName).join(", ") || "Manual review"}</strong>
                 </div>
                 <div className="pending-actions">
-                  <button className="button button-decline" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "decline")}><X size={17} /> Decline</button>
-                  <button className="button button-approve" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "approve")}><Check size={17} /> Approve once</button>
+                  <button className="button button-decline" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "decline")}><X size={17} /> {resolving === item.authorization_id ? "Sending…" : "Decline"}</button>
+                  <button className="button button-approve" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "approve")}><Check size={17} /> {resolving === item.authorization_id ? "Sending…" : "Approve once"}</button>
                 </div>
               </article>
             );
@@ -455,7 +469,7 @@ function LogScreen({ decisions }: { decisions: DecisionTrace[] }) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("policy");
+  const [screen, setScreen] = useState<Screen>("inbox");
   const [mobileNav, setMobileNav] = useState(false);
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [decisions, setDecisions] = useState<DecisionTrace[]>([]);
@@ -510,12 +524,18 @@ export default function App() {
   }
 
   const navigate = (destination: Screen) => { setScreen(destination); setMobileNav(false); };
+  const environment = status?.environment ?? (USE_MOCK_API ? "mock" : null);
+  const environmentCopy = environment === "live"
+    ? { label: "LIVE TEAM ENVIRONMENT", detail: "Runs count toward the shared 300-run quota." }
+    : environment === "offline"
+      ? { label: "OFFLINE SIMULATOR", detail: "Safe local data — no team runs consumed." }
+      : { label: "PROTOTYPE DATA", detail: "Static replay data — no backend calls." };
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <button className="mobile-menu" aria-label="Open navigation" onClick={() => setMobileNav(true)}><Menu size={21} /></button>
-        <button className="brand" onClick={() => navigate("policy")} aria-label="Viseca Relay home">
+        <button className="brand" onClick={() => navigate("inbox")} aria-label="Viseca Relay home">
           <img className="viseca-wordmark" src={visecaWordmark} alt="Viseca" />
           <span className="brand-divider" aria-hidden="true" />
           <span className="product-lockup"><strong>Relay</strong><small>Agent controls</small></span>
@@ -527,7 +547,7 @@ export default function App() {
         </nav>
         <div className="engine-status">
           <span className={`connection-dot ${(status?.connected && streamConnected) ? "online" : "offline"}`} />
-          <div><strong>{status?.engine_mode === "model" ? status.model_name ?? "Model live" : status?.engine_mode === "degraded" ? "Fail-safe mode" : "Deterministic"}</strong><small>{status?.latest_margin_ms ? `${(status.latest_margin_ms / 1000).toFixed(1)}s margin` : "Waiting for engine"}</small></div>
+          <div><strong>{environment === "live" ? "Live" : environment === "offline" ? "Offline" : "Prototype"} · {status?.engine_mode === "model" ? status.model_name ?? "Model" : status?.engine_mode === "degraded" ? "Fail-safe" : "Deterministic"}</strong><small>{status?.latest_margin_ms ? `${(status.latest_margin_ms / 1000).toFixed(1)}s margin` : "Waiting for engine"}</small></div>
         </div>
       </header>
 
@@ -545,10 +565,19 @@ export default function App() {
       </aside>
 
       <div className="workspace">
-        {USE_MOCK_API && <div className="demo-banner"><span>Relay prototype</span> Offline replay data</div>}
+        <div className={`environment-banner environment-${environment ?? "loading"}`} role="status">
+          <strong>{environmentCopy.label}</strong><span>{environmentCopy.detail}</span>
+        </div>
+        {!USE_MOCK_API && status && !streamConnected && <div className="stream-warning" role="status"><RefreshCw size={15} /> Live updates are reconnecting. Existing decisions remain visible.</div>}
         {loadError ? (
           <div className="load-error"><TriangleAlert size={24} /><h2>Relay is temporarily unavailable</h2><p>{loadError}</p><button className="button button-secondary" onClick={() => void load()}><RefreshCw size={17} />Try again</button></div>
-        ) : loading ? <LoadingRows /> : screen === "policy" ? <PolicyScreen status={status} /> : screen === "inbox" ? <InboxScreen pending={pending} onResolve={resolveAuthorization} /> : <LogScreen decisions={decisions} />}
+        ) : loading ? <LoadingRows /> : (
+          <>
+            <div hidden={screen !== "policy"}><PolicyScreen status={status} onRunStarted={() => navigate("inbox")} /></div>
+            <div hidden={screen !== "inbox"}><InboxScreen pending={pending} onResolve={resolveAuthorization} /></div>
+            <div hidden={screen !== "log"}><LogScreen decisions={decisions} /></div>
+          </>
+        )}
       </div>
     </div>
   );

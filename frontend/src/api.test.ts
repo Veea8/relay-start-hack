@@ -73,6 +73,7 @@ describe("Jonas web API adapters", () => {
 
   it("reads scenarios and the deadline margin from the nested status response", () => {
     const status = normalizeStatus({
+      leash_mode: "offline",
       engine_mode: "deterministic",
       llm_mode: "off",
       bootstrap: { scenarios: [{ scenario_id: "SCEN0001", name: "Groceries", event_count: 10 }] },
@@ -80,6 +81,7 @@ describe("Jonas web API adapters", () => {
       worker: { state: "polling", last_margin_ms: 7123, active_run_ids: ["RUN-1"] },
     });
     expect(status.connected).toBe(true);
+    expect(status.environment).toBe("offline");
     expect(status.latest_margin_ms).toBe(7123);
     expect(status.scenarios).toEqual([{ scenario_id: "SCEN0001", name: "Groceries", purchase_count: 10 }]);
   });

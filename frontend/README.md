@@ -27,6 +27,8 @@ The TypeScript wire types are in `src/types.ts`. The decisions and pending route
 
 The browser talks only to this REST/SSE boundary. It contains no Viseca team key, direct Viseca API calls, policy engine or purchase-decision logic.
 
+See `DEMO.md` for the safe offline rehearsal, coordinated live-run checklist and recovery steps.
+
 ## Checks
 
 ```text

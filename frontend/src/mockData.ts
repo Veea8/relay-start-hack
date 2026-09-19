@@ -168,6 +168,7 @@ export const mockPending: PendingAuthorization[] = [
 
 export const mockStatus: EngineStatus = {
   connected: true,
+  environment: "mock",
   engine_mode: "deterministic",
   model_name: null,
   latest_margin_ms: 7824,
