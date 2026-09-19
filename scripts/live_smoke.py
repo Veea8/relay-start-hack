@@ -103,7 +103,7 @@ async def read_only_checks(service):
 # Compile and confirm a mandate for the scenario, start a run and let the worker answer until the run is over
 async def run_one_cycle(service, scenario_id):
     instruction = read_instruction(scenario_id)
-    policy_view = service.compile_policy(instruction, "ask")
+    policy_view = await service.compile_policy(instruction, "ask")
     print_block("compiled policy", policy_view)
     draft = await service.create_draft(instruction, policy_view["hard_rules"], "ask", [], policy_view["open_questions"])
     print_block("draft", draft)

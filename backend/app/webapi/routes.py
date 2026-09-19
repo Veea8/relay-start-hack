@@ -114,7 +114,7 @@ def error_response(service_error):
 @router.post("/policy/compile")
 async def compile_policy(body: CompileBody, request: Request):
     try:
-        return service_of(request).compile_policy(body.instruction, body.uncertainty_policy, body.hard_rules)
+        return await service_of(request).compile_policy(body.instruction, body.uncertainty_policy, body.hard_rules)
     except (ValueError, AssertionError) as compile_error:
         return error_response(ServiceError(400, "The instruction or the rules could not be read - " + str(compile_error)))
 

@@ -10,6 +10,9 @@ import httpx
 from app.api_client.leash import LeashApiError, LeashClient, find_value
 from app.api_client.offline import build_offline_platform
 from app.config import get_settings, resolve_audit_folder, resolve_state_db_path
+from app.llm.breaker import CircuitState
+from app.llm.client import OpenAICompatibleTransport
+from app.llm.policy_compiler import PolicyModelCompiler
 from app.models.decision import ENGINE_VERSION
 from app.policyc.compiler import build_policy_from_mandate
 from app.state.audit import AuditLog
@@ -60,7 +63,7 @@ def format_moment(moment):
 # Hold everything one running backend needs, and carry out the customer's actions
 class RelayService:
 
-    def __init__(self, settings, store, client, audit_log, broadcaster, worker, platform = None):
+    def __init__(self, settings, store, client, audit_log, broadcaster, worker, platform = None, policy_model_compiler = None):
         self.settings = settings
         self.store = store
         self.client = client
@@ -68,6 +71,8 @@ class RelayService:
         self.broadcaster = broadcaster
         self.worker = worker
         self.platform = platform
+        self.policy_model_compiler = policy_model_compiler
+        self.last_policy_model_call = None
         self.started_at = None
         self.bootstrap_payload = None
         self.bootstrap_error = None
@@ -106,7 +111,17 @@ class RelayService:
             client = LeashClient(settings.leash_base_url, settings.team_api_key)
             source = "live"
         worker = DecisionWorker(client, store, audit_log, broadcaster, settings, source = source)
-        return cls(settings, store, client, audit_log, broadcaster, worker, platform)
+        policy_model_compiler = None
+        if settings.llm_model != "" and settings.llm_api_key != "":
+            provider = "swisscom-apertus" if "swisscom" in settings.llm_base_url.casefold() else "openai"
+            model_transport = OpenAICompatibleTransport(
+                settings.llm_base_url,
+                settings.llm_model,
+                provider = provider,
+                initial_api_key = settings.llm_api_key,
+            )
+            policy_model_compiler = PolicyModelCompiler(model_transport)
+        return cls(settings, store, client, audit_log, broadcaster, worker, platform, policy_model_compiler)
 
 
 
@@ -159,10 +174,15 @@ class RelayService:
 
     # Describe the service for the status endpoint and the header badge
     def describe_status(self):
+        model_mode = "off"
+        if self.policy_model_compiler is not None:
+            model_mode = "degraded" if self.policy_model_compiler.breaker.state == CircuitState.OPEN else "ready"
         return {
             "engine_version": ENGINE_VERSION,
             "engine_mode": "deterministic",
-            "llm_mode": "off",
+            "llm_mode": model_mode,
+            "llm_model": self.settings.llm_model or None,
+            "llm_last_call": self.last_policy_model_call,
             "leash_mode": self.settings.leash_mode if self.platform is None else "offline",
             "leash_base_url": self.client.base_url,
             "team_key_present": self.settings.team_api_key != "",
@@ -186,10 +206,14 @@ class RelayService:
 
     #### Step 4: Compile, confirm, tighten and revoke the policy ####
 
-    # Compile an instruction without any model and describe the result, which touches nothing on the platform
-    def compile_policy(self, instruction, uncertainty_policy = "ask", hard_rules = ()):
+    # Compile deterministically first, then optionally let the bounded model improve the customer-confirmed draft.
+    async def compile_policy(self, instruction, uncertainty_policy = "ask", hard_rules = ()):
         mandate_content = MandateContent(instruction, hard_rules, uncertainty_policy)
         policy = build_policy_from_mandate(mandate_content)
+        if self.policy_model_compiler is not None:
+            compilation = await self.policy_model_compiler.compile(instruction, uncertainty_policy, policy)
+            policy = compilation.policy
+            self.last_policy_model_call = compilation.call.model_dump(mode = "json")
         return describe_policy(policy)
 
 
@@ -266,7 +290,7 @@ class RelayService:
         if mandate is None:
             return None
         try:
-            policy_view = self.compile_policy(mandate["instruction"], mandate["uncertainty_policy"], mandate["hard_rules"])
+            policy_view = await self.compile_policy(mandate["instruction"], mandate["uncertainty_policy"], mandate["hard_rules"])
             policy_error = None
         except (ValueError, AssertionError) as compile_error:
             policy_view = None
