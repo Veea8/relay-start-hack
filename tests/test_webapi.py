@@ -18,6 +18,7 @@ from platform_helpers import build_test_platform, build_test_scenario, build_tes
 # State the instruction of the tests and the rule it compiles to
 INSTRUCTION = "Buy one ordinary grocery item for CHF 20 or less. Ask me when uncertain."
 EXPECTED_RULE = {"field": "authorization.billing_amount_chf", "operator": "<=", "value": 20.0, "currency": "CHF", "scope": "purchase"}
+EXPECTED_GOODS_RULE = {"field": "authorization.items.item_category", "operator": "in", "value": ["groceries"]}
 
 
 
@@ -49,8 +50,10 @@ def wait_for_decisions(client, count, timeout_seconds = 5.0):
 def test_compile_shows_rules_and_checks(api):
     client, service, platform = api
     answer = client.post("/api/policy/compile", json = {"instruction": INSTRUCTION}).json()
-    assert answer["hard_rules"] == [EXPECTED_RULE]
-    assert [check["label"] for check in answer["checks"]][:2] == ["Limit per order", "When uncertain"]
+    assert answer["hard_rules"] == [EXPECTED_RULE, EXPECTED_GOODS_RULE]
+    check_labels = [check["label"] for check in answer["checks"]]
+    assert check_labels[:3] == ["Limit per order", "Goods covered", "Requested thing"]
+    assert check_labels[-3:] == ["When uncertain", "Shop text is data", "One purchase, one decision"]
     assert answer["open_questions"] == [] and answer["expectations"]["per_order_limit_chf"] == "20"
     assert platform.drafts == {}
     assert client.post("/api/policy/compile", json = {"instruction": ""}).status_code == 422
@@ -66,7 +69,7 @@ def test_draft_confirm_run_and_resolve(api):
     assert confirmed["status"] == "active" and confirmed["hard_rules"] == [EXPECTED_RULE]
     policy = client.get("/api/policy").json()
     assert policy["mandate"]["mandate_id"] == confirmed["mandate_id"]
-    assert policy["policy"]["hard_rules"] == [EXPECTED_RULE]
+    assert policy["policy"]["hard_rules"] == [EXPECTED_RULE, EXPECTED_GOODS_RULE]
 
 
 
