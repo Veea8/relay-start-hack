@@ -54,3 +54,6 @@ desktop.ini
 # Local decision store of the backend
 outputs/state/
 outputs/audit/offline/
+
+# Logs of scripts/dev.sh
+outputs/logs/
