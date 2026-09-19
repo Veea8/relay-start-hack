@@ -2,6 +2,7 @@
 
 from app.llm.breaker import CircuitBreaker, CircuitState
 from app.llm.extractor import FactExtractor, build_extraction_prompt
+from app.llm.policy_compiler import PolicyCompilation, PolicyModelCompiler
 from app.llm.schemas import ExtractedFacts, ExtractedLine, ModelCallRecord, ModelExtraction
 
 __all__ = [
@@ -12,5 +13,7 @@ __all__ = [
     "FactExtractor",
     "ModelCallRecord",
     "ModelExtraction",
+    "PolicyCompilation",
+    "PolicyModelCompiler",
     "build_extraction_prompt",
 ]
