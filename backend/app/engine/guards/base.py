@@ -11,6 +11,7 @@ from app.models.decision import GuardFamily, GuardResult, GuardVerdict, ReasonCo
 from app.models.events import AuthorizationEvent
 from app.models.policy import InternalPolicy
 from app.state.familiarity import FamiliarityFacts
+from app.state.session import SessionFacts
 
 
 
@@ -24,6 +25,7 @@ from app.state.familiarity import FamiliarityFacts
 
 # Hold everything a guard may look at, where facts carries the amounts as exact decimals,
 # state is the memory of the run, and familiarity holds what the history says about the shop, as counts and names without any identifier.
+# session holds what the history of the card says about the device, the hour and the country of the purchase, as counts without any identifier.
 # extracted_facts holds the facts a language model read from the sentences of the shop, or None when no model ran.
 # It is an optional extra, and a guard that reads it may only become stricter through it.
 @dataclass(frozen = True)
@@ -33,6 +35,7 @@ class DecisionInput:
     facts: FactSheet
     state: Any = None
     familiarity: Optional[FamiliarityFacts] = None
+    session: Optional[SessionFacts] = None
     extracted_facts: Any = None
 
 

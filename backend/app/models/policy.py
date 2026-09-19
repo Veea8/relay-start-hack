@@ -114,6 +114,16 @@ class Expectations(FrozenPolicyModel):
 
 
 
+    # Keep the numbers of the session signals. That many distinct signals ask the customer and that many decline, where a count exactly at a number reaches it.
+    # That many purchase attempts in the ten minutes before a purchase make a quick series, and a card history needs that many purchases
+    # before an hour without any purchase counts as unusual.
+    session_ask_signal_count: int = 2
+    session_decline_signal_count: int = 3
+    velocity_min_recent_attempts: int = 2
+    hour_min_history_purchases: int = 20
+
+
+
 
 
 

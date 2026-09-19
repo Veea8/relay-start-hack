@@ -122,6 +122,20 @@ class Settings(BaseSettings):
 
 
 
+    # Set how many signs that someone other than the customer is driving the session ask the customer, and how many decline.
+    # A count exactly at a number reaches it. Below the asking count a single sign passes, unless the instruction asks to watch the session and the sign is a strong one.
+    session_ask_signal_count: int = Field(default = 2, ge = 1)
+    session_decline_signal_count: int = Field(default = 3, ge = 1)
+
+
+
+    # Set how many purchase attempts in the ten minutes before a purchase make a quick series, and how many purchases a card history needs
+    # before an hour without any purchase counts as an hour the customer never shops at. A thin history says too little about the hours of a customer.
+    velocity_min_recent_attempts: int = Field(default = 2, ge = 1)
+    hour_min_history_purchases: int = Field(default = 20, ge = 1)
+
+
+
 
 
 

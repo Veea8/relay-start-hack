@@ -9,6 +9,8 @@ from functools import lru_cache
 from app.engine.guards.base import PlaceholderGuard
 from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
+from app.engine.guards.g_device import DeviceGuard
+from app.engine.guards.g_geo import GeoGuard
 from app.engine.guards.g_injection import InjectionGuard
 from app.engine.guards.g_item_match import ItemMatchGuard
 from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
@@ -18,7 +20,9 @@ from app.engine.guards.g_merchant_type import MerchantTypeGuard
 from app.engine.guards.g_order_terms import OrderTermsGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.engine.guards.g_period_budget import PeriodBudgetGuard
+from app.engine.guards.g_session_integrity import SessionIntegrityGuard
 from app.engine.guards.g_split_order import SplitOrderGuard
+from app.engine.guards.g_velocity import VelocityGuard
 from app.models.decision import GuardFamily
 
 
@@ -92,6 +96,10 @@ BUILT_GUARD_CLASSES_BY_ID = {
     "order_terms": OrderTermsGuard,
     "lookalike_merchant": LookalikeMerchantGuard,
     "merchant_familiarity": MerchantFamiliarityGuard,
+    "device": DeviceGuard,
+    "velocity": VelocityGuard,
+    "geo": GeoGuard,
+    "session_integrity": SessionIntegrityGuard,
     "item_shop_consistency": ItemShopConsistencyGuard,
     "injection": InjectionGuard,
 }

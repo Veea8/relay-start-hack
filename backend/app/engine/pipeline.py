@@ -30,6 +30,7 @@ from app.models.decision import (
 )
 from app.state.baselines import BaselinesUnavailableError, get_default_baselines
 from app.state.familiarity import build_familiarity_facts
+from app.state.session import build_session_facts
 
 
 
@@ -148,9 +149,33 @@ def look_up_familiarity(event, baselines):
 
 
 
-# Copy the amounts and the shop of the purchase into the record, together with the counts, the resembled name and the score of the familiarity lookup
-# and the facts of the language model
-def collect_trace_facts(event, familiarity_facts = None, model_extraction = None):
+# Look up how usual the device, the hour and the country of the purchase are for the card, from the same counts as the familiarity lookup.
+# Counts that cannot be loaded give None, which every guard treats as a missing fact and never as permission.
+def look_up_session(event, baselines):
+    try:
+        if baselines is None:
+            baselines = get_default_baselines()
+    except BaselinesUnavailableError:
+        return None
+    return build_session_facts(event, baselines)
+
+
+
+# Write the familiarity counts as a plain dictionary and put the session counts next to them under the key "session".
+# Both come from the same counts of the card history, so without the familiarity counts there is nothing to write.
+def collect_familiarity_record(familiarity_facts, session_facts):
+    if familiarity_facts is None:
+        return None
+    return {
+        **asdict(familiarity_facts),
+        "session": None if session_facts is None else asdict(session_facts),
+    }
+
+
+
+# Copy the amounts and the shop of the purchase into the record, together with the counts, the resembled name and the score of the familiarity lookup,
+# the session counts and the facts of the language model
+def collect_trace_facts(event, familiarity_facts = None, model_extraction = None, session_facts = None):
     return TraceFacts(
         amounts = TraceAmounts(
             amount = event.authorization.amount,
@@ -163,7 +188,7 @@ def collect_trace_facts(event, familiarity_facts = None, model_extraction = None
             merchant_category = event.authorization.merchant.merchant_category,
             merchant_country = event.authorization.merchant.merchant_country,
         ),
-        familiarity = None if familiarity_facts is None else asdict(familiarity_facts),
+        familiarity = collect_familiarity_record(familiarity_facts, session_facts),
         extracted_item_facts = collect_extracted_item_facts(model_extraction),
     )
 
@@ -263,6 +288,8 @@ def decide(
     fact_sheet = build_fact_sheet(event)
     # Look the shop up in the card history once per purchase, so every guard reads the same counts and none of them sees an identifier
     familiarity_facts = look_up_familiarity(event, baselines)
+    # Look the device, the hour and the country up in the same card history, once per purchase
+    session_facts = look_up_session(event, baselines)
     model_extraction = read_model_extraction(extracted_facts)
     decision_input = DecisionInput(
         event = event,
@@ -270,6 +297,7 @@ def decide(
         facts = fact_sheet,
         state = state,
         familiarity = familiarity_facts,
+        session = session_facts,
         extracted_facts = model_extraction,
     )
 
@@ -302,7 +330,7 @@ def decide(
         reason_codes = aggregation_outcome.reason_codes,
         customer_message = aggregation_outcome.customer_message,
         notes = aggregation_outcome.notes,
-        facts = collect_trace_facts(event, familiarity_facts, model_extraction),
+        facts = collect_trace_facts(event, familiarity_facts, model_extraction, session_facts),
         guards = guard_results,
         aggregation = aggregation_outcome.aggregation_record,
         llm = collect_trace_language_model(model_extraction),

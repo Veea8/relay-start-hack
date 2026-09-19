@@ -388,12 +388,14 @@ def test_shop_name_stays_inside_the_quotation(example_message):
 
 #### Step 7: Check the guard inside the pipeline and its source ####
 
-# Check on the real card history that a shop used with another card asks through the whole pipeline, and that the record carries the counts
+# Check on the real card history that a shop used with another card asks through the whole pipeline, and that the record carries the counts.
+# The purchase comes from the most used device of the card, so the shop is the only thing about it that is new.
 def test_pipeline_asks_about_a_shop_used_with_another_card(example_message):
     baselines = load_baselines()
     shop = baselines.get_merchant("ME0023")
     changed_message = copy.deepcopy(example_message)
     changed_message["authorization"]["card_id"] = "CA0039"
+    changed_message["authorization"]["customer_device_id"] = "DVC-785971"
     changed_message["authorization"]["merchant"]["merchant_id"] = shop.merchant_id
     changed_message["authorization"]["merchant"]["merchant_name"] = shop.merchant_name
     changed_message["mandate"]["instruction"] = "Buy one grocery item for CHF 20 or less from a seller I have bought from before."
