@@ -38,6 +38,7 @@ node_modules/
 dist/
 build/
 .vite/
+*.tsbuildinfo
 
 # Local tooling config
 .claude/
