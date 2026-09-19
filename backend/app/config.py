@@ -108,6 +108,14 @@ class Settings(BaseSettings):
 
 
 
+    # Set how many approved purchases at a shop make it a shop the customer uses regularly,
+    # and how similar two shop names must be, from 0 to 1, before a new shop counts as an imitation of a shop the customer uses.
+    # A purchase count exactly at the minimum is regular use, and a similarity exactly at the threshold is an imitation.
+    familiarity_regular_min_purchases: int = Field(default = 3, ge = 1)
+    lookalike_name_similarity: Decimal = Field(default = Decimal("0.85"), ge = Decimal("0.75"), le = Decimal("0.95"))
+
+
+
 
 
 

@@ -4,12 +4,13 @@
 # Date: September 2026
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Protocol
+from typing import Any, Mapping, Optional, Protocol
 
 from app.engine.facts import FactSheet
 from app.models.decision import GuardFamily, GuardResult, GuardVerdict, ReasonCode
 from app.models.events import AuthorizationEvent
 from app.models.policy import InternalPolicy
+from app.state.familiarity import FamiliarityFacts
 
 
 
@@ -21,8 +22,8 @@ from app.models.policy import InternalPolicy
 
 #### Step 1: Define the input of a decision ####
 
-# Hold everything a guard may look at, where facts carries the amounts as exact decimals
-# and state is an opaque value that nothing reads yet.
+# Hold everything a guard may look at, where facts carries the amounts as exact decimals,
+# state is the memory of the run, and familiarity holds what the history says about the shop, as counts and names without any identifier.
 # extracted_facts holds the facts a language model read from the sentences of the shop, or None when no model ran.
 # It is an optional extra, and a guard that reads it may only become stricter through it.
 @dataclass(frozen = True)
@@ -31,6 +32,7 @@ class DecisionInput:
     policy: InternalPolicy
     facts: FactSheet
     state: Any = None
+    familiarity: Optional[FamiliarityFacts] = None
     extracted_facts: Any = None
 
 

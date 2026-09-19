@@ -13,10 +13,12 @@ from jsonschema import Draft202012Validator
 
 
 
-# Pin the tolerance share and the split order minutes the expected figures rest on, before anything reads the settings.
-# An environment variable wins over a local .env file, so no local setting can change a test result.
+# Pin the tolerance share, the split order minutes, the purchases of regular use and the name similarity the expected figures rest on,
+# before anything reads the settings. An environment variable wins over a local .env file, so no local setting can change a test result.
 os.environ["OVERSHOOT_TOLERANCE_SHARE"] = "0.10"
 os.environ["SPLIT_ORDER_WINDOW_MINUTES"] = "120"
+os.environ["FAMILIARITY_REGULAR_MIN_PURCHASES"] = "3"
+os.environ["LOOKALIKE_NAME_SIMILARITY"] = "0.85"
 
 
 

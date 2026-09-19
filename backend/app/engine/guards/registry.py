@@ -11,6 +11,8 @@ from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
 from app.engine.guards.g_item_match import ItemMatchGuard
 from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
+from app.engine.guards.g_lookalike_merchant import LookalikeMerchantGuard
+from app.engine.guards.g_merchant_familiarity import MerchantFamiliarityGuard
 from app.engine.guards.g_merchant_type import MerchantTypeGuard
 from app.engine.guards.g_order_terms import OrderTermsGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
@@ -87,6 +89,8 @@ BUILT_GUARD_CLASSES_BY_ID = {
     "merchant_type": MerchantTypeGuard,
     "item_match": ItemMatchGuard,
     "order_terms": OrderTermsGuard,
+    "lookalike_merchant": LookalikeMerchantGuard,
+    "merchant_familiarity": MerchantFamiliarityGuard,
     "item_shop_consistency": ItemShopConsistencyGuard,
 }
 

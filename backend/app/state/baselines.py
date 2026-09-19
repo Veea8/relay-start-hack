@@ -4,7 +4,9 @@
 # Date: September 2026
 
 import json
+import unicodedata
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping, Optional, Tuple
@@ -180,6 +182,19 @@ class Baselines:
 
 #### Step 3: Turn the content of the files into the frozen objects ####
 
+# Reduce a merchant name to lowercase letters and digits without accents, so "PixelHarbor" becomes "pixelharbor".
+# The directory is built with this function, and a name from a purchase message is reduced with it before the two are compared.
+def normalize_merchant_name(merchant_name):
+    decomposed_name = unicodedata.normalize("NFKD", merchant_name)
+    kept_characters = [
+        character.lower()
+        for character in decomposed_name
+        if character.isalnum() and not unicodedata.combining(character)
+    ]
+    return "".join(kept_characters)
+
+
+
 # Freeze a dictionary of whole numbers, so no caller can change a count
 def freeze_counts(counts):
     return MappingProxyType({key: int(count) for key, count in counts.items()})
@@ -352,3 +367,10 @@ def load_baselines(baselines_folder = None):
         return build_baselines(familiarity_content, directory_content)
     except (KeyError, TypeError, ValueError, AttributeError) as content_error:
         raise BaselinesUnavailableError("The baseline files in " + str(baselines_folder) + " are incomplete - " + repr(content_error)) from content_error
+
+
+
+# Load the two files of the default folder on the first call and hand back the same object for the rest of the process
+@lru_cache(maxsize = None)
+def get_default_baselines():
+    return load_baselines()

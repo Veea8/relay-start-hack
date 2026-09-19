@@ -16,7 +16,7 @@ from platform_helpers import build_test_platform, build_test_scenario, build_tes
 
 
 # State the instruction of the tests and the rule it compiles to
-INSTRUCTION = "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain."
+INSTRUCTION = "Buy one ordinary grocery item for CHF 20 or less. Ask me when uncertain."
 EXPECTED_RULE = {"field": "authorization.billing_amount_chf", "operator": "<=", "value": 20.0, "currency": "CHF", "scope": "purchase"}
 
 

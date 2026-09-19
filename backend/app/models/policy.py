@@ -99,9 +99,11 @@ class Expectations(FrozenPolicyModel):
 
 
 
-    # Keep how familiar the seller must be and how closely the session is watched
+    # Keep how familiar the seller must be and how closely the session is watched.
+    # The bar "before" needs one approved purchase at the shop, and "regularly" needs familiarity_regular_min_purchases of them.
     merchant_familiarity: Literal["required", "preferred", "any"] = "any"
     familiarity_bar: Optional[Literal["regularly", "before"]] = None
+    familiarity_regular_min_purchases: int = 3
     session_sensitivity: Literal["normal", "high"] = "normal"
 
 

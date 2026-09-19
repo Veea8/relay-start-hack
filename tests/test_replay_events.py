@@ -312,24 +312,29 @@ def test_engine_decides_when_no_baseline_is_named():
 
 
 # Check that the engine asks and declines on the order limit, the budget, a split order, the kind of goods, the extras, the kind of shop,
-# the requested item and the return terms, and approves the rest.
+# the familiarity of the shop, the requested item and the return terms, and approves the rest.
 # Three small overshoots of the order limit, one of the budget, three orders that look split in two, two carts with an extra line outside the instruction
-# and one order whose shop does not state its return policy ask.
+# and one order whose shop does not state its return policy ask, and so do five purchases at a shop the customer has not used on this card,
+# under an instruction that asks for a shop used before.
 # Three large overshoots, one shop of the wrong kind, one cart with nothing the customer asked for, shoes in the wrong size, trail-running shoes,
-# a helmet, a final sale and a return period of 7 days decline.
+# a helmet, a final sale, a return period of 7 days and one shop that imitates a shop the customer uses decline.
 def test_engine_asks_and_declines_on_limits_budget_split_orders_goods_extras_and_the_kind_of_shop(results_with_engine):
     result_table = replay.build_result_table(results_with_engine)
     summary = replay.summarize_replay(result_table)
     assert len(result_table) == 45
-    assert len(list_sources_with_decision(result_table, "approve")) == 25
-    assert list_sources_with_decision(result_table, "step_up") == ["AU0004", "AU0006", "AU0007", "AU0009", "AU0016", "AU0018", "AU0021", "AU0030", "AU0034", "AU0036"]
-    assert list_sources_with_decision(result_table, "decline") == ["AU0010", "AU0013", "AU0014", "AU0015", "AU0017", "AU0020", "AU0022", "AU0037", "AU0041", "AU0043"]
+    assert len(list_sources_with_decision(result_table, "approve")) == 19
+    assert list_sources_with_decision(result_table, "step_up") == [
+        "AU0004", "AU0006", "AU0007", "AU0009", "AU0016", "AU0018", "AU0021", "AU0027", "AU0028", "AU0029", "AU0030", "AU0033", "AU0034", "AU0036", "AU0044",
+    ]
+    assert list_sources_with_decision(result_table, "decline") == [
+        "AU0010", "AU0013", "AU0014", "AU0015", "AU0017", "AU0020", "AU0022", "AU0037", "AU0039", "AU0041", "AU0043",
+    ]
     assert "trace" not in result_table.columns
-    assert replay.count_guards_not_built() == (14, 23)
+    assert replay.count_guards_not_built() == (12, 23)
 
     # Expect the reasons of each decision, the strictest first, and no reason on an approval
     reason_codes_by_source_id = dict(zip(result_table["source_authorization_id"], result_table["reason_codes"]))
-    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 25
+    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 19
     assert {source_id: reason_codes for source_id, reason_codes in reason_codes_by_source_id.items() if reason_codes != []} == {
         "AU0004": ["SMALL_OVERSHOOT"],
         "AU0006": ["SPLIT_ORDER_SUSPECTED"],
@@ -345,20 +350,26 @@ def test_engine_asks_and_declines_on_limits_budget_split_orders_goods_extras_and
         "AU0020": ["ITEM_MISMATCH"],
         "AU0021": ["SMALL_OVERSHOOT"],
         "AU0022": ["MERCHANT_TYPE_MISMATCH"],
-        "AU0030": ["SPLIT_ORDER_SUSPECTED"],
+        "AU0027": ["UNFAMILIAR_MERCHANT"],
+        "AU0028": ["UNFAMILIAR_MERCHANT"],
+        "AU0029": ["UNFAMILIAR_MERCHANT"],
+        "AU0030": ["SPLIT_ORDER_SUSPECTED", "UNFAMILIAR_MERCHANT"],
+        "AU0033": ["UNFAMILIAR_MERCHANT"],
         "AU0034": ["SMALL_OVERSHOOT"],
         "AU0036": ["SPLIT_ORDER_SUSPECTED"],
         "AU0037": ["OVER_PER_ORDER_LIMIT"],
+        "AU0039": ["LOOKALIKE_MERCHANT", "UNFAMILIAR_MERCHANT"],
         "AU0041": ["OVER_PER_ORDER_LIMIT", "UNREQUESTED_ADDON", "OFF_SCOPE_ITEM", "ITEM_SHOP_MISMATCH"],
         "AU0043": ["OFF_SCOPE_ITEM", "ITEM_MISMATCH"],
+        "AU0044": ["UNFAMILIAR_MERCHANT"],
     }
 
     # Expect an unanswered question to stay pending, so its amount counts as not approved
     assert (result_table.query("decision == 'approve'")["final_status"] == "approved").all()
     assert (result_table.query("decision == 'step_up'")["final_status"] == "pending").all()
     assert (result_table.query("decision == 'decline'")["final_status"] == "declined").all()
-    assert summary["total_approved_chf"] == Decimal("5000.73")
-    assert summary["total_declined_or_pending_chf"] == Decimal("3925.00")
+    assert summary["total_approved_chf"] == Decimal("3490.45")
+    assert summary["total_declined_or_pending_chf"] == Decimal("5435.28")
 
 
 
@@ -474,11 +485,11 @@ def test_comparison_counts_the_matches_of_both_baselines(results_without_control
 
 
 
-# Check that the engine matches 36 of 45 reference decisions with its nine built guards
+# Check that the engine matches 39 of 45 reference decisions with its eleven built guards
 def test_comparison_counts_the_matches_of_the_engine(results_with_engine):
     compared_with_engine = replay.compare_with_reference_decisions(replay.build_result_table(results_with_engine))
     assert len(compared_with_engine) == 45
-    assert int((compared_with_engine["decision_match"] == "match").sum()) == 36
+    assert int((compared_with_engine["decision_match"] == "match").sum()) == 39
 
 
 
@@ -539,6 +550,6 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     # Expect the line about the guards in the printed summary and in the markdown report, and no trace column in the report
     printed_summary = capsys.readouterr().out
     markdown_report = (tmp_path / written_names[1]).read_text(encoding = "utf-8")
-    assert "Guards not built yet - 14 of 23" in printed_summary
-    assert "Guards not built yet - 14 of 23" in markdown_report
+    assert "Guards not built yet - 12 of 23" in printed_summary
+    assert "Guards not built yet - 12 of 23" in markdown_report
     assert "trace_version" not in markdown_report

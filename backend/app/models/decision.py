@@ -241,7 +241,8 @@ class TraceMerchant(FrozenDecisionModel):
 
 
 
-# Keep the facts the decision rests on, where familiarity and the extracted item facts stay empty for now
+# Keep the facts the decision rests on. familiarity holds the counts of the card history for the shop, the resembled shop name and the score,
+# and is empty when the counts could not be loaded. The extracted item facts stay empty for now.
 class TraceFacts(FrozenDecisionModel):
 
     amounts: TraceAmounts

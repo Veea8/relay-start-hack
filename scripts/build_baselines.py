@@ -5,7 +5,7 @@
 
 import argparse
 import json
-import unicodedata
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,8 +24,17 @@ import pandas as pd
 
 # Locate the repository folders from the location of this file
 REPOSITORY_FOLDER = Path(__file__).resolve().parent.parent
+BACKEND_FOLDER = REPOSITORY_FOLDER / "backend"
 CASE_DATA_FOLDER = REPOSITORY_FOLDER / "data" / "raw" / "2026-09-18_viseca-2026" / "data"
 DEFAULT_OUTPUT_FOLDER = REPOSITORY_FOLDER / "data" / "processed"
+
+
+
+# Make the backend importable, so the directory is built with the same name function the backend compares names with
+if str(BACKEND_FOLDER) not in sys.path:
+    sys.path.insert(0, str(BACKEND_FOLDER))
+
+from app.state.baselines import normalize_merchant_name
 
 
 
@@ -531,19 +540,7 @@ def build_familiarity_baselines(source_tables, populations):
 
 
 
-# Reduce a merchant name to lowercase letters and digits without accents, so "PixelHarbor" becomes "pixelharbor"
-def normalize_merchant_name(merchant_name):
-    decomposed_name = unicodedata.normalize("NFKD", merchant_name)
-    kept_characters = [
-        character.lower()
-        for character in decomposed_name
-        if character.isalnum() and not unicodedata.combining(character)
-    ]
-    return "".join(kept_characters)
-
-
-
-# Build the merchant directory, with one entry per merchant
+# Build the merchant directory, with one entry per merchant, where the name is reduced to lowercase letters and digits without accents
 def build_merchant_directory(source_tables, populations):
     merchant_ids = source_tables.merchants["merchant_id"].tolist()
     cards_per_merchant = count_distinct_buyers_per_merchant(populations.approved_purchases, merchant_ids, "card_id")

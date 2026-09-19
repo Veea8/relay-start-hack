@@ -37,7 +37,7 @@ EXAMPLE_MESSAGE_PATH = Path(__file__).resolve().parent.parent / "data" / "raw" /
 
 
 # State the instruction the tests use, whose limit the CHF 20 of the example meets exactly
-TEST_INSTRUCTION = "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain."
+TEST_INSTRUCTION = "Buy one ordinary grocery item for CHF 20 or less. Ask me when uncertain."
 
 
 

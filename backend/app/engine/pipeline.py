@@ -4,9 +4,11 @@
 # Date: September 2026
 
 import time
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 
+from app.config import get_settings
 from app.engine.aggregate import aggregate
 from app.engine.display import clean_shop_text
 from app.engine.facts import build_fact_sheet
@@ -26,6 +28,8 @@ from app.models.decision import (
     TraceMerchant,
     TraceTimings,
 )
+from app.state.baselines import BaselinesUnavailableError, get_default_baselines
+from app.state.familiarity import build_familiarity_facts
 
 
 
@@ -132,8 +136,21 @@ def collect_trace_language_model(model_extraction):
 
 
 
-# Copy the amounts and the shop of the purchase and the facts of the language model into the record
-def collect_trace_facts(event, model_extraction = None):
+# Look up how familiar the shop of the purchase is, with the name similarity of the settings.
+# Counts that cannot be loaded give None, which every guard treats as a missing fact and never as permission.
+def look_up_familiarity(event, baselines):
+    try:
+        if baselines is None:
+            baselines = get_default_baselines()
+    except BaselinesUnavailableError:
+        return None
+    return build_familiarity_facts(event, baselines, get_settings().lookalike_name_similarity)
+
+
+
+# Copy the amounts and the shop of the purchase into the record, together with the counts, the resembled name and the score of the familiarity lookup
+# and the facts of the language model
+def collect_trace_facts(event, familiarity_facts = None, model_extraction = None):
     return TraceFacts(
         amounts = TraceAmounts(
             amount = event.authorization.amount,
@@ -146,6 +163,7 @@ def collect_trace_facts(event, model_extraction = None):
             merchant_category = event.authorization.merchant.merchant_category,
             merchant_country = event.authorization.merchant.merchant_country,
         ),
+        familiarity = None if familiarity_facts is None else asdict(familiarity_facts),
         extracted_item_facts = collect_extracted_item_facts(model_extraction),
     )
 
@@ -213,7 +231,16 @@ def run_one_guard(guard, decision_input, earlier_results):
 # Decide one purchase and return the complete record, where every guard appears whatever happened.
 # The clock is read for the received and decided moments, the margin and the timings only, and no guard sees it.
 # extracted_facts may carry what a language model read from the sentences of the shop. It is optional, and the decision never waits for it.
-def decide(event, policy, state, guards = None, read_clock = None, extracted_facts = None):
+# baselines holds the counts of the card history, and None means the counts that are loaded once per process.
+def decide(
+    event,
+    policy,
+    state,
+    guards = None,
+    read_clock = None,
+    extracted_facts = None,
+    baselines = None,
+):
 
     # Fall back to the full pipeline, which is built once per process, and to the real clock
     if guards is None:
@@ -234,8 +261,17 @@ def decide(event, policy, state, guards = None, read_clock = None, extracted_fac
     # Build the fact sheet once and hand it to every guard, so all guards compare the same exact decimals.
     # A message whose facts cannot be built raises here, and the exception leaves this function unchanged.
     fact_sheet = build_fact_sheet(event)
+    # Look the shop up in the card history once per purchase, so every guard reads the same counts and none of them sees an identifier
+    familiarity_facts = look_up_familiarity(event, baselines)
     model_extraction = read_model_extraction(extracted_facts)
-    decision_input = DecisionInput(event = event, policy = policy, facts = fact_sheet, state = state, extracted_facts = model_extraction)
+    decision_input = DecisionInput(
+        event = event,
+        policy = policy,
+        facts = fact_sheet,
+        state = state,
+        familiarity = familiarity_facts,
+        extracted_facts = model_extraction,
+    )
 
 
 
@@ -266,7 +302,7 @@ def decide(event, policy, state, guards = None, read_clock = None, extracted_fac
         reason_codes = aggregation_outcome.reason_codes,
         customer_message = aggregation_outcome.customer_message,
         notes = aggregation_outcome.notes,
-        facts = collect_trace_facts(event, model_extraction),
+        facts = collect_trace_facts(event, familiarity_facts, model_extraction),
         guards = guard_results,
         aggregation = aggregation_outcome.aggregation_record,
         llm = collect_trace_language_model(model_extraction),

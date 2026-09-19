@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from app.config import get_settings
 from app.models.policy import Expectations, InternalPolicy, RequestedItem
+from app.policyc.familiarity import read_familiarity
 from app.policyc.item_scope import read_item_scope
 from app.policyc.merchant_type import read_merchant_type
 from app.policyc.order_limit import read_order_limit
@@ -42,7 +43,7 @@ def build_requested_item(asks_for_one_thing, requested_item_reading):
 
 
 # Copy the instruction, the rules and the uncertainty policy, and read the limit per order, the budget over a period, the kinds of goods,
-# the shape of the request, the requested item, the order terms and the kind of shop from the instruction and the rules.
+# the shape of the request, the requested item, the order terms, the kind of shop and how familiar the shop has to be from the instruction and the rules.
 # Whatever a reader could not settle becomes an open question for the customer, and every other expectation stays at its default.
 def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_catalogue = None):
 
@@ -61,7 +62,7 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
 
     # Read everything without any model, so the policy is ready at once.
     # The open questions about the limit per order come first, then those about the budget over a period,
-    # the goods, the shape of the request, the requested item, the order terms and the kind of shop.
+    # the goods, the shape of the request, the requested item, the order terms, the kind of shop and last the familiarity of the shop.
     order_limit_reading = read_order_limit(mandate.instruction, mandate.hard_rules)
     period_budget_reading = read_period_budget(mandate.instruction, mandate.hard_rules)
     item_scope_reading = read_item_scope(mandate.instruction, mandate.hard_rules, item_catalogue)
@@ -69,6 +70,7 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
     requested_item_reading = read_requested_item(mandate.instruction, item_catalogue, request_shape_reading.asks_for_one_thing)
     order_terms_reading = read_order_terms(mandate.instruction)
     merchant_type_reading = read_merchant_type(mandate.instruction, mandate.hard_rules)
+    familiarity_reading = read_familiarity(mandate.instruction)
     return InternalPolicy(
         instruction = mandate.instruction,
         hard_rules = tuple(mandate.hard_rules),
@@ -90,6 +92,9 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
             requested_item = build_requested_item(request_shape_reading.asks_for_one_thing, requested_item_reading),
             no_addons = request_shape_reading.no_addons,
             min_return_days = order_terms_reading.min_return_days,
+            merchant_familiarity = familiarity_reading.merchant_familiarity,
+            familiarity_bar = familiarity_reading.familiarity_bar,
+            familiarity_regular_min_purchases = get_settings().familiarity_regular_min_purchases,
         ),
         open_questions = (
             order_limit_reading.open_questions
@@ -99,5 +104,6 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
             + requested_item_reading.open_questions
             + order_terms_reading.open_questions
             + merchant_type_reading.open_questions
+            + familiarity_reading.open_questions
         ),
     )
