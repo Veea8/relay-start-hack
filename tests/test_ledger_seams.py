@@ -102,6 +102,49 @@ def test_worker_hands_the_engine_the_memory_of_the_run(tmp_path):
 
 
 
+# State an instruction with a limit per order and no budget, under which CHF 22.01 declines as more than 10 percent over the limit
+LIMIT_INSTRUCTION = "Buy groceries, at most CHF 20 per order. Ask me when uncertain."
+
+
+
+# Build the attempts of a run whose purchases all hold the same cart, which each attempt says by stating the same item
+def build_scenario_with_the_same_cart(amounts):
+    return [
+        {**scenario_entry, "attempt": {**scenario_entry["attempt"], "item_id": "IT_SEAM_SAME_ITEM"}}
+        for scenario_entry in build_timed_scenario(amounts)
+    ]
+
+
+
+# Let the worker decide a run of two purchases with the same cart at the same shop, three hours apart, and return their records
+async def decide_two_purchases(tmp_path, amounts):
+    platform = build_test_platform({SCENARIO_NAME: build_scenario_with_the_same_cart(amounts)})
+    service = build_test_service(platform, tmp_path)
+    await confirm_and_start(service, SCENARIO_NAME, instruction = LIMIT_INSTRUCTION)
+    records = await decide_next_purchases(service, 2)
+    await service.client.close()
+    return records
+
+
+
+# Check that the worker hands the engine the cart of the purchase being decided, so the same cart for the same amount at the same shop,
+# three hours after an approved order, asks as a repeated order. The same order after a declined one does not,
+# because only an order the customer already has can be bought twice.
+def test_worker_asks_about_a_repeated_order_and_not_after_a_declined_one(tmp_path):
+    async def scenario():
+        records_after_an_approval = await decide_two_purchases(tmp_path / "after_an_approval", [18.0, 18.0])
+        assert [record["decision"] for record in records_after_an_approval] == ["approve", "step_up"]
+        assert [record["reason_codes"] for record in records_after_an_approval] == [[], ["DUPLICATE_SUSPECTED"]]
+        assert "3 hours ago for CHF 18.00" in records_after_an_approval[1]["customer_message"]
+
+        records_after_a_decline = await decide_two_purchases(tmp_path / "after_a_decline", [22.01, 20.0])
+        assert [record["decision"] for record in records_after_a_decline] == ["decline", "approve"]
+        assert [record["status"] for record in records_after_a_decline] == ["declined", "approved"]
+        assert records_after_a_decline[1]["reason_codes"] == []
+    run_async(scenario())
+
+
+
 
 
 

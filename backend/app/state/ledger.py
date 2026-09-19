@@ -10,6 +10,7 @@ from typing import Optional, Tuple
 
 from app.engine.display import describe_francs
 from app.engine.facts import to_money
+from app.policyc.instruction_text import read_words
 
 
 
@@ -22,13 +23,18 @@ from app.engine.facts import to_money
 #### Step 1: Define the snapshot ####
 
 # Hold one earlier purchase of the run, with its simulated time, its amount in Swiss francs and its status.
-# same_shop says whether it was made at the shop of the purchase being decided. No identifier is kept, so no guard can decide on one.
+# same_shop says whether it was made at the shop of the purchase being decided, and same_cart whether it held exactly the same items
+# in the same quantities. line_name_words holds the words of each item name of the earlier purchase, in lower case and in singular form,
+# which is the form the fact sheet gives the names of the cart being decided. An earlier purchase whose cart is not known has same_cart False and no words.
+# No identifier is kept, so no guard can decide on one.
 @dataclass(frozen = True)
 class LedgerEntry:
     sim_time: datetime
     amount_chf: Decimal
     status: str
     same_shop: bool
+    same_cart: bool = False
+    line_name_words: Tuple[Tuple[str, ...], ...] = ()
 
 
 
@@ -93,6 +99,69 @@ def read_ledger_amount(amount_value):
 
 
 
+# Report whether one cart line can be read, which needs an item identifier and an item name as text that is not empty and a quantity as a whole number above zero
+def cart_line_is_readable(cart_line):
+    if not isinstance(cart_line, dict):
+        return False
+    item_identifier = cart_line.get("item_id")
+    item_name = cart_line.get("item_name")
+    quantity = cart_line.get("quantity")
+    identifier_is_readable = isinstance(item_identifier, str) and item_identifier != ""
+    name_is_readable = isinstance(item_name, str) and item_name != ""
+    quantity_is_readable = isinstance(quantity, int) and not isinstance(quantity, bool) and quantity > 0
+    return identifier_is_readable and name_is_readable and quantity_is_readable
+
+
+
+# Report whether a cart is known, which needs a list with at least one line where every line can be read.
+# A cart with one line that cannot be read is not known as a whole, because a cart that is partly known can never be called the same as another.
+def cart_is_known(cart_lines):
+    if not isinstance(cart_lines, (list, tuple)) or len(cart_lines) == 0:
+        return False
+    return all(cart_line_is_readable(cart_line) for cart_line in cart_lines)
+
+
+
+# Reduce a known cart to what it holds, which is every item with its whole quantity, in the order of the item identifiers.
+# The order of the lines drops out, and an item on two lines counts with the sum of both.
+def read_cart_content(cart_lines):
+    item_identifiers = sorted({cart_line["item_id"] for cart_line in cart_lines})
+    return tuple(
+        (
+            item_identifier,
+            sum(cart_line["quantity"] for cart_line in cart_lines if cart_line["item_id"] == item_identifier),
+        )
+        for item_identifier in item_identifiers
+    )
+
+
+
+# Compare the cart of an earlier purchase with the cart of the purchase being decided. Only two known carts with the same items
+# in the same quantities are the same, so a cart that is not known on either side gives False.
+def carts_are_the_same(row_cart_lines, own_cart_lines):
+    if not cart_is_known(row_cart_lines) or not cart_is_known(own_cart_lines):
+        return False
+    return read_cart_content(row_cart_lines) == read_cart_content(own_cart_lines)
+
+
+
+# Read the words of each item name of a cart in line order, with the function the fact sheet reads the names of the cart being decided with.
+# A cart that is not known gives no words.
+def read_line_name_words(cart_lines):
+    if not cart_is_known(cart_lines):
+        return ()
+    return tuple(read_words(cart_line["item_name"]) for cart_line in cart_lines)
+
+
+
+# Report whether an amount repeats an earlier amount, which it does when the two differ by at most the share of the earlier amount.
+# The share is multiplied and never divided by, so an earlier amount of zero is repeated by another zero only. A difference of exactly the share still counts.
+def is_repeat_of_amount(entry_amount_chf, amount_chf, share):
+    allowed_difference_chf = entry_amount_chf * Decimal(str(share))
+    return abs(amount_chf - entry_amount_chf) <= allowed_difference_chf
+
+
+
 # Describe what one row gave, which is an entry, nothing on purpose, or nothing because the row could not be read
 @dataclass(frozen = True)
 class LedgerRowReading:
@@ -111,7 +180,8 @@ ROW_UNREADABLE = LedgerRowReading(entry = None, is_readable = False)
 # unless the caller asks to keep the later ones.
 # An approved row whose time, amount or shop cannot be read is unreadable, and so is a row with an unknown status. Both make the snapshot incomplete,
 # because money may have been spent that cannot be counted. A pending row that cannot be read is left out, because a pending purchase has spent nothing.
-def read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows):
+# A row may carry its cart under the key cart_lines. A row without a cart that can be read stays readable, because its money can still be counted.
+def read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows, own_cart_lines = None):
     status = row.get("status")
     if status in LEFT_OUT_STATUSES:
         return ROW_LEFT_OUT
@@ -132,13 +202,16 @@ def read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows):
 
 
 
-    # Compare the shops here, so the entry carries the answer and not the identifier
+    # Compare the shops and the carts here, so the entry carries the answers and not the identifiers
+    row_cart_lines = row.get("cart_lines")
     return LedgerRowReading(
         entry = LedgerEntry(
             sim_time = sim_time,
             amount_chf = amount_chf,
             status = status,
             same_shop = row_shop_identifier == shop_identifier,
+            same_cart = carts_are_the_same(row_cart_lines, own_cart_lines),
+            line_name_words = read_line_name_words(row_cart_lines),
         ),
         is_readable = True,
     )
@@ -154,17 +227,23 @@ def read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows):
 #### Step 3: Build the snapshot ####
 
 # Build the snapshot from the earlier purchases of one run, each a dictionary with the keys authorization_id, timestamp,
-# merchant_id, billing_amount_chf and status. The row of the purchase being decided is dropped, so it never counts against itself.
+# merchant_id, billing_amount_chf and status, and with its cart under the key cart_lines where the cart is known.
+# The row of the purchase being decided is dropped, so it never counts against itself.
 # Rows after the purchase time are dropped, which is what every guard gets. Only the check of a customer's approval keeps them,
 # because a purchase that was approved meanwhile may share a period with the one being approved.
-def build_ledger_snapshot(earlier_purchases, purchase_time, shop_identifier, own_identifier, keep_later_rows = False):
+# own_cart_lines is the cart of the purchase being decided, as a list of dictionaries with item_id, item_name and quantity.
+# Without it no earlier purchase can be said to have held the same cart.
+def build_ledger_snapshot(earlier_purchases, purchase_time, shop_identifier, own_identifier, keep_later_rows = False, own_cart_lines = None):
     assert isinstance(purchase_time, datetime) and purchase_time.utcoffset() is not None, "The purchase time must carry a time zone"
     rows_of_other_purchases = [
         row
         for row in earlier_purchases
         if own_identifier is None or row.get("authorization_id") != own_identifier
     ]
-    row_readings = [read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows) for row in rows_of_other_purchases]
+    row_readings = [
+        read_ledger_row(row, purchase_time, shop_identifier, keep_later_rows, own_cart_lines)
+        for row in rows_of_other_purchases
+    ]
     entries = [row_reading.entry for row_reading in row_readings if row_reading.entry is not None]
     return LedgerSnapshot(
         purchase_time = purchase_time,
@@ -174,9 +253,22 @@ def build_ledger_snapshot(earlier_purchases, purchase_time, shop_identifier, own
 
 
 
+# Read the cart of one decision record of the store, which its decision record keeps among its facts. A record without a decision record,
+# such as one about a message that could not be read, has no cart.
+def read_record_cart_lines(record):
+    trace = record.get("trace")
+    if not isinstance(trace, dict):
+        return None
+    facts = trace.get("facts")
+    if not isinstance(facts, dict):
+        return None
+    return facts.get("cart_lines")
+
+
+
 # Build the snapshot from the decision records of the store. Only the records of the same run and the same mandate count,
 # where None equals None. Every live run replays the same simulated dates, so a record of another run must never count.
-def build_ledger_snapshot_from_records(records, run_id, mandate_id, purchase_time, shop_identifier, own_identifier, keep_later_rows = False):
+def build_ledger_snapshot_from_records(records, run_id, mandate_id, purchase_time, shop_identifier, own_identifier, keep_later_rows = False, own_cart_lines = None):
     earlier_purchases = [
         {
             "authorization_id": record.get("live_authorization_id"),
@@ -184,15 +276,29 @@ def build_ledger_snapshot_from_records(records, run_id, mandate_id, purchase_tim
             "merchant_id": record.get("merchant_id"),
             "billing_amount_chf": record.get("amount_chf"),
             "status": record.get("status"),
+            "cart_lines": read_record_cart_lines(record),
         }
         for record in records
         if record.get("run_id") == run_id and record.get("mandate_id") == mandate_id
     ]
-    return build_ledger_snapshot(earlier_purchases, purchase_time, shop_identifier, own_identifier, keep_later_rows)
+    return build_ledger_snapshot(earlier_purchases, purchase_time, shop_identifier, own_identifier, keep_later_rows, own_cart_lines)
 
 
 
-# Build the snapshot for one purchase message, which gives the time, the shop and the own identifier
+# Read the cart of one purchase message in line order, in the shape the rows and the records carry a cart
+def read_event_cart_lines(event):
+    return [
+        {
+            "item_id": cart_item.item_id,
+            "item_name": cart_item.item_name,
+            "quantity": cart_item.quantity,
+        }
+        for cart_item in event.authorization.items
+    ]
+
+
+
+# Build the snapshot for one purchase message, which gives the time, the shop, the own identifier and the own cart
 def build_ledger_snapshot_for_event(earlier_purchases, event, keep_later_rows = False):
     return build_ledger_snapshot(
         earlier_purchases = earlier_purchases,
@@ -200,6 +306,7 @@ def build_ledger_snapshot_for_event(earlier_purchases, event, keep_later_rows = 
         shop_identifier = event.authorization.merchant.merchant_id,
         own_identifier = event.authorization.authorization_id,
         keep_later_rows = keep_later_rows,
+        own_cart_lines = read_event_cart_lines(event),
     )
 
 

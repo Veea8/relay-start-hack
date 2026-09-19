@@ -32,7 +32,7 @@ from app.models.decision import (
 )
 from app.models.events import InvalidEventError, read_purchase_message
 from app.policyc.compiler import build_policy_from_mandate
-from app.state.ledger import build_ledger_snapshot_from_records
+from app.state.ledger import build_ledger_snapshot_from_records, read_event_cart_lines
 from app.trust.score import build_invalid_event_score, build_trust_evidence, score_trace
 from app.worker.budget import DeadlineBudget, read_utc_clock
 
@@ -696,6 +696,7 @@ class DecisionWorker:
             purchase_time = event.authorization.timestamp,
             shop_identifier = event.authorization.merchant.merchant_id,
             own_identifier = event.authorization.authorization_id,
+            own_cart_lines = read_event_cart_lines(event),
         )
 
 

@@ -79,6 +79,20 @@ class Expectations(FrozenPolicyModel):
 
 
 
+    # Keep how many hours after an approved order the same cart at the same shop counts as a repeated order,
+    # and how far the two amounts may be apart, as a share of the earlier amount
+    duplicate_window_hours: int = 48
+    duplicate_amount_share: Decimal = Decimal("0.10")
+
+
+
+    # Keep what happens when the instruction asks for one thing and that thing was already bought, which is nothing, a note on an approval or a question.
+    # The question is the default, because one thing means one and the customer stays responsible for a second one.
+    # No value declines, because a second purchase that is clean on its own facts breaks no instruction.
+    goal_fulfilled_action: Literal["off", "note", "step_up"] = "step_up"
+
+
+
     # Keep the allowed and the prohibited categories, the kind of shop and the requested item.
     # A strict kind of shop means the instruction insists on it, as in "only from", so another kind of shop is refused and not asked about.
     allowed_item_categories: tuple[str, ...] = ()

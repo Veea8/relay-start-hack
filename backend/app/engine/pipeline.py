@@ -173,8 +173,22 @@ def collect_familiarity_record(familiarity_facts, session_facts):
 
 
 
+# Copy the cart into the record in line order, each line with its item, its name cleaned like every text a shop wrote, and its quantity.
+# A stored record tells through this copy what an earlier purchase held. The guards never read it.
+def collect_trace_cart_lines(event):
+    return [
+        {
+            "item_id": cart_item.item_id,
+            "item_name": clean_shop_text(cart_item.item_name),
+            "quantity": cart_item.quantity,
+        }
+        for cart_item in event.authorization.items
+    ]
+
+
+
 # Copy the amounts and the shop of the purchase into the record, together with the counts, the resembled name and the score of the familiarity lookup,
-# the session counts and the facts of the language model
+# the session counts, the facts of the language model and the cart
 def collect_trace_facts(event, familiarity_facts = None, model_extraction = None, session_facts = None):
     return TraceFacts(
         amounts = TraceAmounts(
@@ -190,6 +204,7 @@ def collect_trace_facts(event, familiarity_facts = None, model_extraction = None
         ),
         familiarity = collect_familiarity_record(familiarity_facts, session_facts),
         extracted_item_facts = collect_extracted_item_facts(model_extraction),
+        cart_lines = collect_trace_cart_lines(event),
     )
 
 

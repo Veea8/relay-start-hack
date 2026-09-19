@@ -295,6 +295,56 @@ def test_order_over_the_limit_on_its_own_is_left_to_the_limit_per_order(example_
 
 
 
+# Build one earlier order that held exactly the cart of the example message
+def build_row_with_the_same_cart(example_message, time_before_purchase, amount, status = "approved"):
+    cart_lines = [
+        {"item_id": cart_line["item_id"], "item_name": cart_line["item_name"], "quantity": cart_line["quantity"]}
+        for cart_line in example_message["authorization"]["items"]
+    ]
+    return {**build_row(example_message, time_before_purchase, amount, status = status), "cart_lines": cart_lines}
+
+
+
+# Check that the same cart for the same amount shortly after an order that is still an open question asks here,
+# because the check for repeated orders counts approved orders only, and an identical second order must not pass both checks
+def test_same_cart_for_the_same_amount_after_a_pending_order_asks(example_message):
+    event = build_event(example_message, 65.00)
+    rows = [build_row_with_the_same_cart(example_message, timedelta(minutes = 6), 65.00, status = "pending")]
+    guard_result = check_purchase(event, build_policy("120"), rows)
+    assert guard_result.verdict == GuardVerdict.STEP_UP
+    assert guard_result.reason_code == ReasonCode.SPLIT_ORDER_SUSPECTED
+    assert find_evidence(guard_result, "same_shop_orders_in_window").value == 1
+    assert find_evidence(guard_result, "combined_same_shop_chf").value == 130.0
+
+
+
+# Check that the same cart for the same amount shortly after passes here, because the same order twice is a repeat and no half of a split order
+def test_same_cart_for_the_same_amount_is_left_to_the_check_for_repeated_orders(example_message):
+    event = build_event(example_message, 65.00)
+    rows = [build_row_with_the_same_cart(example_message, timedelta(minutes = 6), 65.00)]
+    guard_result = check_purchase(event, build_policy("120"), rows)
+    assert guard_result.verdict == GuardVerdict.PASS
+    assert guard_result.reason_code is None
+    assert find_evidence(guard_result, "same_shop_orders_in_window").value == 0
+    assert find_evidence(guard_result, "combined_same_shop_chf").value == 65.0
+
+
+
+# Check that the same cart for a clearly different amount, more than the share of the earlier amount apart, still counts as a half,
+# with the edge at exactly the share, where CHF 72.00 against CHF 80.00 is a repeat and CHF 71.99 is a half
+def test_same_cart_for_a_clearly_different_amount_still_counts_as_a_half(example_message):
+    rows = [build_row_with_the_same_cart(example_message, timedelta(minutes = 6), 80.00)]
+    result_far_apart = check_purchase(build_event(example_message, 50.00), build_policy("120"), rows)
+    result_at_the_share = check_purchase(build_event(example_message, 72.00), build_policy("120"), rows)
+    result_past_the_share = check_purchase(build_event(example_message, 71.99), build_policy("120"), rows)
+    assert result_far_apart.verdict == GuardVerdict.STEP_UP
+    assert result_far_apart.reason_code == ReasonCode.SPLIT_ORDER_SUSPECTED
+    assert find_evidence(result_far_apart, "combined_same_shop_chf").value == 130.0
+    assert result_at_the_share.verdict == GuardVerdict.PASS
+    assert result_past_the_share.verdict == GuardVerdict.STEP_UP
+
+
+
 
 
 
@@ -330,13 +380,14 @@ def test_limit_without_a_usable_memory_gives_uncertain(example_message):
 
 
 
-# Check that a missing memory under a limit per order asks through the whole pipeline and names the reason once
+# Check that a missing memory under a limit per order asks through the whole pipeline and names the reason once,
+# raised by this guard and by the check for repeated orders, which needs the memory under every instruction
 def test_missing_memory_asks_through_the_pipeline(example_message):
     event = build_event(example_message, 65.00)
     decision_trace = decide(event, build_policy("120"), None)
     assert decision_trace.decision == Decision.STEP_UP
     assert decision_trace.reason_codes == [ReasonCode.LEDGER_UNAVAILABLE]
-    assert decision_trace.aggregation.raised_by == ["split_order"]
+    assert decision_trace.aggregation.raised_by == ["split_order", "duplicate_order"]
 
 
 

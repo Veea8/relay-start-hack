@@ -70,7 +70,9 @@ def format_message_time(moment):
 
 #### Step 2: Build messages from attempts ####
 
-# Build one live-shaped message from a test attempt, which names the amount, the sale time and whether the message is broken
+# Build one live-shaped message from a test attempt, which names the amount, the sale time and whether the message is broken.
+# The one cart line gets its own item identifier from the position of the attempt, unless the attempt states one under item_id,
+# because the real purchases of a run do not all hold the identical cart.
 def build_test_message(attempt, cart_lines, run_state, uncertainty_policy, live_authorization_id, received_at):
     message = json.loads(EXAMPLE_MESSAGE_PATH.read_text(encoding = "utf-8"))
     amount = float(attempt.get("billing_amount_chf", 20.0))
@@ -86,6 +88,7 @@ def build_test_message(attempt, cart_lines, run_state, uncertainty_policy, live_
     authorization["billing_amount_chf"] = amount
     authorization["items_subtotal"] = float(Decimal(str(amount)) - Decimal(str(delivery_fee)))
     authorization["items"][0]["unit_price"] = authorization["items_subtotal"]
+    authorization["items"][0]["item_id"] = attempt.get("item_id", "IT_EXAMPLE_" + str(authorization["replay_order"]).zfill(4))
     authorization["recent_attempt_count_10m"] = len(run_state.earlier_purchases)
     message["request_id"] = "req_" + live_authorization_id
     message["deadline_at"] = format_message_time(received_at + timedelta(seconds = 8))

@@ -13,8 +13,9 @@ from jsonschema import Draft202012Validator
 
 
 
-# Pin the tolerance share, the split order minutes, the purchases of regular use, the name similarity, the answer to text aimed at the agent
-# and the four numbers of the session signals that the expected figures rest on, before anything reads the settings.
+# Pin the tolerance share, the split order minutes, the purchases of regular use, the name similarity, the answer to text aimed at the agent,
+# the four numbers of the session signals, the hours and the amount share of a repeated order and the answer to a goal already bought,
+# which the expected figures rest on, before anything reads the settings.
 # An environment variable wins over a local .env file, so no local setting can change a test result.
 os.environ["OVERSHOOT_TOLERANCE_SHARE"] = "0.10"
 os.environ["SPLIT_ORDER_WINDOW_MINUTES"] = "120"
@@ -25,6 +26,9 @@ os.environ["SESSION_ASK_SIGNAL_COUNT"] = "2"
 os.environ["SESSION_DECLINE_SIGNAL_COUNT"] = "3"
 os.environ["VELOCITY_MIN_RECENT_ATTEMPTS"] = "2"
 os.environ["HOUR_MIN_HISTORY_PURCHASES"] = "20"
+os.environ["DUPLICATE_WINDOW_HOURS"] = "48"
+os.environ["DUPLICATE_AMOUNT_SHARE"] = "0.10"
+os.environ["GOAL_FULFILLED_ACTION"] = "step_up"
 
 
 

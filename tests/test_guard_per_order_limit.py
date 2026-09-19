@@ -198,10 +198,11 @@ def test_unclear_limit_gives_uncertain(example_message, reading):
 
 
 
-# Check that an unclear limit asks the customer through the whole pipeline when the customer wants to be asked
+# Check that an unclear limit asks the customer through the whole pipeline when the customer wants to be asked.
+# The run has no earlier purchase, which the engine has to be told, because a missing memory asks on its own.
 def test_unclear_limit_is_a_step_up_under_the_policy_ask(example_message):
     event = build_event(example_message, 49.90)
-    decision_trace = decide(event, build_policy(None, reading = "unclear", uncertainty_policy = "ask"), None)
+    decision_trace = decide(event, build_policy(None, reading = "unclear", uncertainty_policy = "ask"), build_empty_ledger_snapshot(event))
     assert decision_trace.decision == Decision.STEP_UP
     assert decision_trace.reason_codes == [ReasonCode.ORDER_LIMIT_UNCLEAR]
     assert decision_trace.aggregation.raised_by == ["per_order_limit"]

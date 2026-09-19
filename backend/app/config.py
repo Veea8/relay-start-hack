@@ -90,8 +90,9 @@ class Settings(BaseSettings):
 
 
 
-    # Choose what happens when a one-time goal was already bought, and when merchant text tries to instruct the agent
-    goal_fulfilled_action: Literal["off", "note", "step_up"] = "note"
+    # Choose what happens when a one-time goal was already bought, and when merchant text tries to instruct the agent.
+    # A second order of the one requested thing asks the customer unless another value is set, because one thing means one.
+    goal_fulfilled_action: Literal["off", "note", "step_up"] = "step_up"
     injection_action: Literal["step_up", "decline"] = "step_up"
 
 
@@ -105,6 +106,14 @@ class Settings(BaseSettings):
     # Set how many minutes apart two orders at the same shop may be and still be put to the customer as one order split in two.
     # The minutes run on the simulated time of the purchases, and an order exactly that long ago still counts.
     split_order_window_minutes: int = Field(default = 120, gt = 0)
+
+
+
+    # Set how many hours after an approved order the same cart at the same shop is put to the customer as a repeated order,
+    # and how far the two amounts may be apart, as a share of the earlier amount.
+    # The hours run on the simulated time of the purchases. An order exactly that long ago still counts, and so does a difference of exactly the share.
+    duplicate_window_hours: int = Field(default = 48, gt = 0)
+    duplicate_amount_share: Decimal = Field(default = Decimal("0.10"), ge = 0, le = 1)
 
 
 

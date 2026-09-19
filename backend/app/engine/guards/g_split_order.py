@@ -10,7 +10,7 @@ from decimal import Decimal
 from app.engine.display import describe_francs
 from app.engine.guards.base import build_guard_result
 from app.models.decision import EvidenceItem, GuardFamily, GuardVerdict, ReasonCode
-from app.state.ledger import LedgerSnapshot
+from app.state.ledger import LedgerSnapshot, is_repeat_of_amount
 
 
 
@@ -33,6 +33,11 @@ MEMORY_SOURCE = "memory of the run"
 
 # Name the statuses of the earlier orders that count, where an open question counts because the customer may still approve it
 COUNTED_STATUSES = ("approved", "pending")
+
+
+
+# Name the one status of an earlier order that can be repeated, because only an order the customer already has can be bought twice
+REPEAT_STATUS = "approved"
 
 
 
@@ -155,13 +160,19 @@ class SplitOrderGuard:
 
 
 
-        # Take the approved and the pending orders at the same shop inside the minutes, where an order exactly that long ago still counts
+        # Take the approved and the pending orders at the same shop inside the minutes, where an order exactly that long ago still counts.
+        # An approved earlier order that this one repeats, with the same cart at nearly the same amount, is left out, because two halves of one order
+        # differ from each other, and the same order twice is a repeat that the check for repeated orders answers.
+        # That check counts approved orders only, so a repeat of an open question stays here, and an identical second order never passes both checks.
         window_minutes = expectations.split_order_window_minutes
         window_start = snapshot.purchase_time - timedelta(minutes = window_minutes)
         nearby_entries = tuple(
             entry
             for entry in snapshot.entries
-            if entry.same_shop and entry.status in COUNTED_STATUSES and entry.sim_time >= window_start
+            if entry.same_shop
+            and entry.status in COUNTED_STATUSES
+            and entry.sim_time >= window_start
+            and not (entry.status == REPEAT_STATUS and entry.same_cart and is_repeat_of_amount(entry.amount_chf, amount_chf, expectations.duplicate_amount_share))
         )
         nearby_sum_chf = sum((entry.amount_chf for entry in nearby_entries), Decimal("0"))
         combined_chf = nearby_sum_chf + amount_chf

@@ -296,7 +296,7 @@ def test_missing_memory_never_approves(example_message, uncertainty_policy, expe
     decision_trace = decide(event, build_policy("300", uncertainty_policy = uncertainty_policy), None)
     assert decision_trace.decision == expected_decision
     assert decision_trace.reason_codes == [ReasonCode.LEDGER_UNAVAILABLE]
-    assert decision_trace.aggregation.raised_by == ["period_budget"]
+    assert decision_trace.aggregation.raised_by == ["period_budget", "duplicate_order"]
 
 
 

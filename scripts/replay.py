@@ -41,6 +41,7 @@ OUTPUT_FOLDER = REPOSITORY_FOLDER / "outputs" / "replay"
 if str(BACKEND_FOLDER) not in sys.path:
     sys.path.insert(0, str(BACKEND_FOLDER))
 
+from app.config import get_settings
 from app.engine.guards.registry import build_guard_pipeline, list_placeholder_guard_ids
 from app.engine.pipeline import decide
 from app.models.events import InvalidEventError, read_purchase_message
@@ -74,6 +75,14 @@ ALLOWED_UNCERTAINTY_POLICIES = ("ask", "decline", "approve")
 
 # Name a run that the engine decides, which stands in the file names where the baseline name stands otherwise
 ENGINE_RUN_NAME = "engine"
+
+
+
+# Name the two columns of the reference decisions. One judges every purchase on its own facts,
+# and the other judges it in the sequence of its run, where a second order of the one requested thing asks the customer.
+REFERENCE_COLUMN_ON_OWN_FACTS = "decision_on_own_facts"
+REFERENCE_COLUMN_IN_SEQUENCE = "decision_in_sequence"
+REFERENCE_COLUMNS = (REFERENCE_COLUMN_ON_OWN_FACTS, REFERENCE_COLUMN_IN_SEQUENCE)
 
 
 
@@ -225,7 +234,9 @@ def read_simulated_time(timestamp_text):
 
 
 
-# Keep what one run remembers, which is its local identifiers, the live identifier of every delivered purchase and their outcomes
+# Keep what one run remembers, which is its local identifiers, the live identifier of every delivered purchase and their outcomes.
+# Each earlier purchase is a dictionary with the keys authorization_id, timestamp, merchant_id, billing_amount_chf and status,
+# and with its cart under cart_lines, a list of dictionaries with item_id, item_name and quantity.
 @dataclass
 class ReplayRunState:
     mandate_id: str
@@ -274,12 +285,18 @@ def build_cart_line(cart_line):
 
 
 
-# List the earlier purchases of the run inside the ten minutes before the current purchase, whatever their status
+# Name the five keys the message format allows for one recent purchase. The format forbids any other key,
+# so the cart that the run remembers next to them never travels in a message.
+RECENT_AUTHORIZATION_KEYS = ("authorization_id", "timestamp", "merchant_id", "billing_amount_chf", "status")
+
+
+
+# List the earlier purchases of the run inside the ten minutes before the current purchase, whatever their status, each with the five allowed keys only
 def build_recent_authorizations(run_state, current_timestamp_text):
     current_time = read_simulated_time(current_timestamp_text)
     window_start = current_time - timedelta(minutes = HISTORY_WINDOW_MINUTES)
     return [
-        dict(earlier_purchase)
+        {key: earlier_purchase[key] for key in RECENT_AUTHORIZATION_KEYS}
         for earlier_purchase in run_state.earlier_purchases
         if window_start <= read_simulated_time(earlier_purchase["timestamp"]) < current_time
     ]
@@ -624,6 +641,10 @@ def replay_one_scenario(scenario_attempts, cart_lines_by_source_id, decide_purch
             "merchant_id": attempt["merchant_id"],
             "billing_amount_chf": message["authorization"]["billing_amount_chf"],
             "status": final_status,
+            "cart_lines": [
+                {"item_id": cart_line["item_id"], "item_name": cart_line["item_name"], "quantity": cart_line["quantity"]}
+                for cart_line in message["authorization"]["items"]
+            ],
         })
 
 
@@ -748,16 +769,34 @@ def build_totals_table(summary):
 
 #### Step 8: Compare the finished run with the reference decisions ####
 
+# Choose the column of the reference decisions that fits the settings. An engine that asks the customer about a second order
+# of the one requested thing is compared with the decisions in sequence, and any other engine with the decisions on the own facts of each purchase.
+def choose_reference_column():
+    if get_settings().goal_fulfilled_action == "step_up":
+        return REFERENCE_COLUMN_IN_SEQUENCE
+    return REFERENCE_COLUMN_ON_OWN_FACTS
+
+
+
+# Name the column of the reference decisions that a finished comparison used
+def read_reference_column(comparison_table):
+    used_columns = [column_name for column_name in REFERENCE_COLUMNS if column_name in comparison_table.columns]
+    assert len(used_columns) == 1, "A comparison must carry exactly one column of reference decisions"
+    return used_columns[0]
+
+
+
 # This comparison runs only after every decision of the run is final, and it only reads the finished result table.
 # No decision function and no message builder may import, call or receive anything from it.
 def compare_with_reference_decisions(result_table, reference_path = None):
 
-    # Read the reference decisions as text
+    # Read the reference decisions as text, in the column that fits the settings
     if reference_path is None:
         reference_path = REPOSITORY_FOLDER / "data" / "processed" / "purchase_verdicts.csv"
+    reference_column = choose_reference_column()
     reference_decisions = (
         pd.read_csv(reference_path, dtype = str, keep_default_na = False)
-        .loc[:, ["authorization_id", "decision_on_own_facts"]]
+        .loc[:, ["authorization_id", reference_column]]
         .rename(columns = {"authorization_id": "source_authorization_id"})
     )
 
@@ -767,7 +806,7 @@ def compare_with_reference_decisions(result_table, reference_path = None):
     compared_table = (
         result_table
         .merge(reference_decisions, on = "source_authorization_id", how = "left", validate = "one_to_one", indicator = "reference_join")
-        .assign(decision_match = lambda table: (table["decision"] == table["decision_on_own_facts"]).map({True: "match", False: "MISMATCH"}))
+        .assign(decision_match = lambda table: (table["decision"] == table[reference_column]).map({True: "match", False: "MISMATCH"}))
     )
     assert (compared_table["reference_join"] == "both").all(), "A purchase has no reference decision"
 
@@ -782,7 +821,7 @@ def compare_with_reference_decisions(result_table, reference_path = None):
     decision_position = list(result_table.columns).index("decision")
     ordered_columns = (
         other_columns[:decision_position]
-        + ["decision", "decision_on_own_facts", "decision_match"]
+        + ["decision", reference_column, "decision_match"]
         + other_columns[decision_position:]
     )
     return compared_table.loc[:, ordered_columns]
@@ -858,7 +897,10 @@ def build_markdown_report(run_label, decision_source, resolve_mode, display_tabl
     ]
     if comparison_table is not None:
         match_count = int((comparison_table["decision_match"] == "match").sum())
-        summary_parts = summary_parts + ["Comparison with the reference decisions - matches " + str(match_count) + " of " + str(len(comparison_table))]
+        summary_parts = summary_parts + [
+            "Comparison with the reference decisions in the column " + read_reference_column(comparison_table)
+            + " - matches " + str(match_count) + " of " + str(len(comparison_table))
+        ]
     if guards_not_built_line is not None:
         summary_parts = summary_parts + [guards_not_built_line]
 
@@ -900,12 +942,14 @@ def print_replay_summary(run_label, decision_source, resolve_mode, summary, comp
 
     if comparison_table is not None:
         match_count = int((comparison_table["decision_match"] == "match").sum())
+        reference_column = read_reference_column(comparison_table)
         mismatches = (
             comparison_table
             .query("decision_match == 'MISMATCH'")
-            .loc[:, ["scenario_id", "replay_order", "source_authorization_id", "decision", "decision_on_own_facts"]]
+            .loc[:, ["scenario_id", "replay_order", "source_authorization_id", "decision", reference_column]]
         )
         print("--- Comparison with the reference decisions ---")
+        print("reference column " + reference_column)
         print("matches " + str(match_count) + " of " + str(len(comparison_table)))
         print()
         print("--- Mismatches ---")

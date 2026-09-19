@@ -17,7 +17,7 @@ from app.llm.policy_compiler import PolicyModelCompiler
 from app.models.decision import ENGINE_VERSION
 from app.policyc.compiler import build_policy_from_mandate
 from app.state.audit import AuditLog
-from app.state.ledger import build_ledger_snapshot_from_records, find_budget_objection, read_ledger_time
+from app.state.ledger import build_ledger_snapshot_from_records, find_budget_objection, read_ledger_time, read_record_cart_lines
 from app.state.store import DecisionStore
 from app.trust.score import TRUST_SCORE_VERSION
 from app.webapi.policy_view import MandateContent, describe_policy
@@ -427,6 +427,7 @@ class RelayService:
             shop_identifier = record.get("merchant_id"),
             own_identifier = record.get("live_authorization_id"),
             keep_later_rows = True,
+            own_cart_lines = read_record_cart_lines(record),
         )
         return find_budget_objection(record.get("trace"), snapshot)
 

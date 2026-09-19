@@ -243,12 +243,15 @@ class TraceMerchant(FrozenDecisionModel):
 
 # Keep the facts the decision rests on. familiarity holds the counts of the card history for the shop, the resembled shop name and the score,
 # and is empty when the counts could not be loaded. The extracted item facts stay empty for now.
+# cart_lines holds the cart in line order, each line as a plain dictionary with item_id, the cleaned item_name and quantity.
+# It is kept so that a stored record can later tell what an earlier purchase held. No guard reads it.
 class TraceFacts(FrozenDecisionModel):
 
     amounts: TraceAmounts
     merchant: TraceMerchant
     familiarity: Optional[dict[str, Any]] = None
     extracted_item_facts: Optional[dict[str, Any]] = None
+    cart_lines: list[dict[str, Any]] = Field(default_factory = list)
 
 
 

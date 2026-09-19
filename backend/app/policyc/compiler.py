@@ -45,7 +45,8 @@ def build_requested_item(asks_for_one_thing, requested_item_reading):
 
 # Copy the instruction, the rules and the uncertainty policy, and read the limit per order, the budget over a period, the kinds of goods,
 # the shape of the request, the requested item, the order terms, the kind of shop, how familiar the shop has to be
-# and how closely the session is watched from the instruction and the rules. The numbers of the session signals come from the settings.
+# and how closely the session is watched from the instruction and the rules. The numbers of the session signals, the hours and the amount share of a repeated order
+# and the answer to a goal that was already bought come from the settings.
 # Whatever a reader could not settle becomes an open question for the customer, and every other expectation stays at its default.
 def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_catalogue = None):
 
@@ -87,6 +88,9 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
             period_limit_inclusive = period_budget_reading.inclusive,
             period_limit_reading = period_budget_reading.reading,
             split_order_window_minutes = get_settings().split_order_window_minutes,
+            duplicate_window_hours = get_settings().duplicate_window_hours,
+            duplicate_amount_share = get_settings().duplicate_amount_share,
+            goal_fulfilled_action = get_settings().goal_fulfilled_action,
             overshoot_tolerance_share = overshoot_tolerance_share,
             allowed_item_categories = item_scope_reading.allowed_item_categories,
             prohibited_item_categories = item_scope_reading.prohibited_item_categories,

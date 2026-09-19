@@ -79,7 +79,7 @@ def test_draft_confirm_run_and_resolve(api):
     decisions = wait_for_decisions(client, 2)
     assert [record["decision"] for record in decisions] == ["approve", "step_up"]
     pending = client.get("/api/pending").json()["pending"]
-    assert len(pending) == 1 and pending[0]["reason_codes"] == ["SMALL_OVERSHOOT"]
+    assert len(pending) == 1 and pending[0]["reason_codes"] == ["SMALL_OVERSHOOT", "GOAL_ALREADY_FULFILLED"]
     assert client.get("/api/decisions/" + pending[0]["live_authorization_id"]).json()["trace"]["decision"] == "step_up"
     assert client.get("/api/decisions/LA_none").status_code == 404
 

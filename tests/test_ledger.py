@@ -1,5 +1,5 @@
 # Script: test_ledger.py
-# Purpose: Check that the memory of a run counts only its own purchases, sums exact amounts inside a period with exact edges, and checks a budget again when a customer approves a question
+# Purpose: Check that the memory of a run counts only its own purchases, sums exact amounts inside a period with exact edges, checks a budget again when a customer approves a question, and says whether an earlier purchase held the same cart
 # Author: Andrés Gallardo
 # Date: September 2026
 
@@ -8,11 +8,15 @@ from decimal import Decimal
 
 import pytest
 
+from app.models.events import read_purchase_message
 from app.state.ledger import (
     LedgerSnapshot,
     build_ledger_snapshot,
+    build_ledger_snapshot_for_event,
     build_ledger_snapshot_from_records,
     find_budget_objection,
+    is_repeat_of_amount,
+    read_event_cart_lines,
     sum_approved_in_window,
 )
 
@@ -239,7 +243,7 @@ def test_entry_says_whether_the_shop_is_the_same_and_keeps_no_identifier():
     ]
     snapshot = build_snapshot(rows)
     assert [entry.same_shop for entry in snapshot.entries] == [True, False]
-    assert sorted(vars(snapshot.entries[0])) == ["amount_chf", "same_shop", "sim_time", "status"]
+    assert sorted(vars(snapshot.entries[0])) == ["amount_chf", "line_name_words", "same_cart", "same_shop", "sim_time", "status"]
 
 
 
@@ -540,3 +544,174 @@ def test_budget_over_the_whole_mandate_sees_a_later_approval():
         "Since this question was asked you approved another order. "
         "This one would now bring your spending under this instruction to CHF 361.50, above your budget of CHF 300.00."
     )
+
+
+
+
+
+
+
+
+
+#### Step 6: Check the carts and the repeated amount ####
+
+# State the cart of the purchase being decided, with two items on two lines
+OWN_CART = [
+    {"item_id": "ITEM_MONITOR", "item_name": "27-inch computer monitors", "quantity": 1},
+    {"item_id": "ITEM_CABLE", "item_name": "Display cable", "quantity": 2},
+]
+
+
+
+# Build the snapshot of one earlier approved purchase with the given cart, for the purchase being decided with its own cart
+def build_snapshot_with_carts(row_cart_lines, own_cart_lines = OWN_CART):
+    row = {**build_row("EARLIER", PURCHASE_TIME - timedelta(hours = 1), 10.0), "cart_lines": row_cart_lines}
+    return build_ledger_snapshot([row], PURCHASE_TIME, OWN_SHOP, "OWN", own_cart_lines = own_cart_lines)
+
+
+
+# Check that the same items in the same quantities are the same cart, whatever the order of the lines and whatever the names say
+def test_same_items_in_another_line_order_are_the_same_cart():
+    cart_in_another_order = [
+        {"item_id": "ITEM_CABLE", "item_name": "Cable under another name", "quantity": 2},
+        {"item_id": "ITEM_MONITOR", "item_name": "Monitor under another name", "quantity": 1},
+    ]
+    snapshot = build_snapshot_with_carts(cart_in_another_order)
+    assert [entry.same_cart for entry in snapshot.entries] == [True]
+    assert snapshot.is_complete is True
+
+
+
+# Check that another quantity, one more line, one line less and another item are not the same cart
+@pytest.mark.parametrize(
+    "other_cart",
+    [
+        [{"item_id": "ITEM_MONITOR", "item_name": "Monitor", "quantity": 2}, {"item_id": "ITEM_CABLE", "item_name": "Cable", "quantity": 2}],
+        OWN_CART + [{"item_id": "ITEM_PLAN", "item_name": "Protection plan", "quantity": 1}],
+        OWN_CART[:1],
+        [{"item_id": "ITEM_MONITOR", "item_name": "Monitor", "quantity": 1}, {"item_id": "ITEM_STAND", "item_name": "Stand", "quantity": 2}],
+    ],
+    ids = ["another quantity", "one more line", "one line less", "another item"],
+)
+def test_a_cart_that_differs_is_not_the_same_cart(other_cart):
+    snapshot = build_snapshot_with_carts(other_cart)
+    assert [entry.same_cart for entry in snapshot.entries] == [False]
+    assert snapshot.is_complete is True
+
+
+
+# Check that an item on two lines counts with the sum of both
+def test_item_on_two_lines_counts_with_its_whole_quantity():
+    cart_with_a_split_line = [
+        {"item_id": "ITEM_MONITOR", "item_name": "Monitor", "quantity": 1},
+        {"item_id": "ITEM_CABLE", "item_name": "Cable", "quantity": 1},
+        {"item_id": "ITEM_CABLE", "item_name": "Cable", "quantity": 1},
+    ]
+    assert [entry.same_cart for entry in build_snapshot_with_carts(cart_with_a_split_line).entries] == [True]
+
+
+
+# Check that a row without a cart, and a row whose cart cannot be read, give False and no words and leave the snapshot complete,
+# because the money of such a purchase can still be counted
+@pytest.mark.parametrize(
+    "unknown_cart",
+    [
+        None,
+        [],
+        "ITEM_MONITOR",
+        [{"item_id": "ITEM_MONITOR", "item_name": "Monitor"}],
+        [{"item_id": "", "item_name": "Monitor", "quantity": 1}],
+        [{"item_id": "ITEM_MONITOR", "item_name": "Monitor", "quantity": True}],
+        [{"item_id": "ITEM_MONITOR", "item_name": "Monitor", "quantity": "1"}],
+        OWN_CART + ["not a line"],
+    ],
+    ids = ["no cart", "empty cart", "cart as text", "no quantity", "empty identifier", "quantity as boolean", "quantity as text", "one broken line"],
+)
+def test_row_without_a_known_cart_gives_false_and_keeps_the_snapshot_complete(unknown_cart):
+    snapshot = build_snapshot_with_carts(unknown_cart)
+    assert [entry.same_cart for entry in snapshot.entries] == [False]
+    assert [entry.line_name_words for entry in snapshot.entries] == [()]
+    assert [entry.amount_chf for entry in snapshot.entries] == [Decimal("10.00")]
+    assert snapshot.is_complete is True
+
+
+
+# Check that a row without the key cart_lines reads like a row without a cart
+def test_row_without_the_cart_key_gives_false():
+    rows = [build_row("EARLIER", PURCHASE_TIME - timedelta(hours = 1), 10.0)]
+    snapshot = build_ledger_snapshot(rows, PURCHASE_TIME, OWN_SHOP, "OWN", own_cart_lines = OWN_CART)
+    assert [entry.same_cart for entry in snapshot.entries] == [False]
+    assert snapshot.is_complete is True
+
+
+
+# Check that no earlier purchase holds the same cart when the cart of the purchase being decided is not handed in, while the name words are still read
+def test_without_the_own_cart_no_cart_is_the_same():
+    snapshot = build_snapshot_with_carts(OWN_CART, own_cart_lines = None)
+    assert [entry.same_cart for entry in snapshot.entries] == [False]
+    assert [entry.line_name_words for entry in snapshot.entries] == [(("27", "inch", "computer", "monitor"), ("display", "cable"))]
+
+
+
+# Check that the words of the item names are kept per line, in lower case and in singular form, and that the entry still keeps no identifier
+def test_entry_keeps_the_name_words_of_each_line_and_no_identifier():
+    snapshot = build_snapshot_with_carts(OWN_CART)
+    assert snapshot.entries[0].line_name_words == (("27", "inch", "computer", "monitor"), ("display", "cable"))
+    assert "ITEM_MONITOR" not in repr(snapshot.entries[0])
+    assert "ITEM_CABLE" not in repr(snapshot.entries[0])
+
+
+
+# Check that a record of the store reads its cart from its decision record, and that a record without one has no cart
+def test_record_reads_its_cart_from_its_trace():
+    records = [
+        build_record("LA_1", PURCHASE_TIME - timedelta(hours = 3), "10.00", trace = {"facts": {"cart_lines": list(reversed(OWN_CART))}}),
+        build_record("LA_2", PURCHASE_TIME - timedelta(hours = 2), "10.00", trace = {"facts": {"cart_lines": OWN_CART[:1]}}),
+        build_record("LA_3", PURCHASE_TIME - timedelta(hours = 1), "10.00", trace = None),
+        build_record("LA_4", PURCHASE_TIME - timedelta(minutes = 30), "10.00", trace = {"facts": {}}),
+        build_record("LA_5", PURCHASE_TIME - timedelta(minutes = 20), "10.00", trace = {"guards": []}),
+    ]
+    snapshot = build_ledger_snapshot_from_records(records, "run_1", "mandate_1", PURCHASE_TIME, OWN_SHOP, "OWN", own_cart_lines = OWN_CART)
+    snapshot_without_own_cart = build_ledger_snapshot_from_records(records, "run_1", "mandate_1", PURCHASE_TIME, OWN_SHOP, "OWN")
+    assert [entry.same_cart for entry in snapshot.entries] == [True, False, False, False, False]
+    assert [len(entry.line_name_words) for entry in snapshot.entries] == [2, 1, 0, 0, 0]
+    assert snapshot.is_complete is True
+    assert [entry.same_cart for entry in snapshot_without_own_cart.entries] == [False] * 5
+    assert [len(entry.line_name_words) for entry in snapshot_without_own_cart.entries] == [2, 1, 0, 0, 0]
+
+
+
+# Check that the snapshot built for a purchase message reads the own cart from the message
+def test_snapshot_for_an_event_reads_the_own_cart_from_the_message(example_message):
+    event = read_purchase_message(example_message)
+    example_cart = [{"item_id": "IT_EXAMPLE_0001", "item_name": "Example grocery item", "quantity": 1}]
+    rows = [
+        {**build_row("SAME", event.authorization.timestamp - timedelta(hours = 2), 10.0), "cart_lines": example_cart},
+        {**build_row("OTHER", event.authorization.timestamp - timedelta(hours = 1), 10.0), "cart_lines": OWN_CART},
+    ]
+    snapshot = build_ledger_snapshot_for_event(rows, event)
+    assert [entry.same_cart for entry in snapshot.entries] == [True, False]
+    assert read_event_cart_lines(event) == example_cart
+
+
+
+# Check the repeated amount at exactly 10 percent of the earlier amount in both directions, one cent beyond, and with an earlier amount of zero
+def test_repeated_amount_has_exact_edges():
+    share = Decimal("0.10")
+    assert is_repeat_of_amount(Decimal("289.00"), Decimal("289.00"), share) is True
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("110.00"), share) is True
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("110.01"), share) is False
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("90.00"), share) is True
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("89.99"), share) is False
+    assert is_repeat_of_amount(Decimal("0.00"), Decimal("0.00"), share) is True
+    assert is_repeat_of_amount(Decimal("0.00"), Decimal("0.01"), share) is False
+
+
+
+# Check that the share applies to the earlier amount and not to the new one, and that a share handed in as a float or as text reads the same
+def test_repeated_amount_takes_the_share_of_the_earlier_amount():
+    assert is_repeat_of_amount(Decimal("110.00"), Decimal("99.00"), Decimal("0.10")) is True
+    assert is_repeat_of_amount(Decimal("110.00"), Decimal("98.99"), Decimal("0.10")) is False
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("110.00"), 0.1) is True
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("110.01"), "0.10") is False
+    assert is_repeat_of_amount(Decimal("100.00"), Decimal("100.01"), Decimal("0")) is False

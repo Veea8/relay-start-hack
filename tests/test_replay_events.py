@@ -10,6 +10,7 @@ from decimal import Decimal
 import pytest
 
 import replay
+from app.config import get_settings
 from app.models.events import read_purchase_message
 
 
@@ -313,7 +314,8 @@ def test_engine_decides_when_no_baseline_is_named():
 
 # Check that the engine asks and declines on the order limit, the budget, a split order, the kind of goods, the extras, the kind of shop,
 # the familiarity of the shop, the requested item and the return terms, and approves the rest.
-# Three small overshoots of the order limit, one of the budget, two orders that look split in two, two carts with an extra line outside the instruction
+# Three small overshoots of the order limit, one of the budget, one order that looks split in two, one that repeats an order the customer already has,
+# two carts with an extra line outside the instruction
 # and one order whose shop does not state its return policy ask, and so do five purchases at a shop the customer has not used on this card,
 # under an instruction that asks for a shop used before.
 # Three large overshoots, one shop of the wrong kind, one cart with nothing the customer asked for, shoes in the wrong size, trail-running shoes,
@@ -322,38 +324,43 @@ def test_engine_decides_when_no_baseline_is_named():
 # and one purchase far over its limit with such a sentence declines on the limit and names the sentence second.
 # One purchase from a device the card never used asks, under an instruction that asks to watch the session,
 # and four night purchases with three or more signs that someone else is driving the session decline.
+# Five purchases whose facts are clean ask because they are a second order of the one thing the instruction asks for,
+# and every other second order of that thing names this reason last, after the reasons that matter more.
 def test_engine_asks_and_declines_on_limits_budget_split_orders_goods_extras_and_the_kind_of_shop(results_with_engine):
     result_table = replay.build_result_table(results_with_engine)
     summary = replay.summarize_replay(result_table)
     assert len(result_table) == 45
-    assert len(list_sources_with_decision(result_table, "approve")) == 17
+    assert len(list_sources_with_decision(result_table, "approve")) == 12
     assert list_sources_with_decision(result_table, "step_up") == [
-        "AU0004", "AU0006", "AU0007", "AU0009", "AU0016", "AU0018", "AU0021", "AU0026", "AU0033", "AU0034", "AU0036", "AU0040", "AU0044",
+        "AU0004", "AU0006", "AU0007", "AU0009", "AU0016", "AU0018", "AU0019", "AU0021", "AU0023", "AU0026", "AU0033", "AU0034", "AU0036",
+        "AU0038", "AU0040", "AU0042", "AU0044", "AU0045",
     ]
     assert list_sources_with_decision(result_table, "decline") == [
         "AU0010", "AU0013", "AU0014", "AU0015", "AU0017", "AU0020", "AU0022", "AU0027", "AU0028", "AU0029", "AU0030", "AU0037", "AU0039", "AU0041", "AU0043",
     ]
     assert "trace" not in result_table.columns
-    assert replay.count_guards_not_built() == (7, 23)
+    assert replay.count_guards_not_built() == (5, 23)
 
     # Expect the reasons of each decision, the strictest first, and no reason on an approval
     reason_codes_by_source_id = dict(zip(result_table["source_authorization_id"], result_table["reason_codes"]))
-    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 17
+    assert result_table.query("decision == 'approve'")["reason_codes"].tolist() == [[]] * 12
     assert {source_id: reason_codes for source_id, reason_codes in reason_codes_by_source_id.items() if reason_codes != []} == {
         "AU0004": ["SMALL_OVERSHOOT"],
         "AU0006": ["SPLIT_ORDER_SUSPECTED"],
         "AU0007": ["OFF_SCOPE_ITEM", "UNREQUESTED_ADDON"],
         "AU0009": ["SMALL_OVERSHOOT"],
         "AU0010": ["OVER_PER_ORDER_LIMIT", "OVER_PERIOD_LIMIT"],
-        "AU0013": ["ITEM_MISMATCH"],
-        "AU0014": ["RETURN_TERMS_UNMET"],
-        "AU0015": ["RETURN_TERMS_UNMET"],
-        "AU0016": ["RETURN_TERMS_UNKNOWN"],
+        "AU0013": ["ITEM_MISMATCH", "DUPLICATE_SUSPECTED", "GOAL_ALREADY_FULFILLED"],
+        "AU0014": ["RETURN_TERMS_UNMET", "GOAL_ALREADY_FULFILLED"],
+        "AU0015": ["RETURN_TERMS_UNMET", "DUPLICATE_SUSPECTED", "GOAL_ALREADY_FULFILLED"],
+        "AU0016": ["RETURN_TERMS_UNKNOWN", "GOAL_ALREADY_FULFILLED"],
         "AU0017": ["ITEM_MISMATCH"],
-        "AU0018": ["OFF_SCOPE_ITEM", "UNREQUESTED_ADDON", "ITEM_SHOP_MISMATCH"],
+        "AU0018": ["OFF_SCOPE_ITEM", "UNREQUESTED_ADDON", "ITEM_SHOP_MISMATCH", "GOAL_ALREADY_FULFILLED"],
+        "AU0019": ["GOAL_ALREADY_FULFILLED"],
         "AU0020": ["ITEM_MISMATCH"],
-        "AU0021": ["SMALL_OVERSHOOT"],
-        "AU0022": ["MERCHANT_TYPE_MISMATCH"],
+        "AU0021": ["SMALL_OVERSHOOT", "GOAL_ALREADY_FULFILLED"],
+        "AU0022": ["MERCHANT_TYPE_MISMATCH", "GOAL_ALREADY_FULFILLED"],
+        "AU0023": ["GOAL_ALREADY_FULFILLED"],
         "AU0026": ["SESSION_ANOMALY"],
         "AU0027": ["SESSION_ANOMALY", "UNFAMILIAR_MERCHANT"],
         "AU0028": ["SESSION_ANOMALY", "UNFAMILIAR_MERCHANT"],
@@ -361,21 +368,103 @@ def test_engine_asks_and_declines_on_limits_budget_split_orders_goods_extras_and
         "AU0030": ["SESSION_ANOMALY", "UNFAMILIAR_MERCHANT"],
         "AU0033": ["UNFAMILIAR_MERCHANT"],
         "AU0034": ["SMALL_OVERSHOOT"],
-        "AU0036": ["SPLIT_ORDER_SUSPECTED"],
-        "AU0037": ["OVER_PER_ORDER_LIMIT", "PROMPT_INJECTION"],
-        "AU0039": ["LOOKALIKE_MERCHANT", "UNFAMILIAR_MERCHANT"],
-        "AU0040": ["PROMPT_INJECTION"],
-        "AU0041": ["OVER_PER_ORDER_LIMIT", "UNREQUESTED_ADDON", "OFF_SCOPE_ITEM", "ITEM_SHOP_MISMATCH"],
+        "AU0036": ["DUPLICATE_SUSPECTED", "GOAL_ALREADY_FULFILLED"],
+        "AU0037": ["OVER_PER_ORDER_LIMIT", "PROMPT_INJECTION", "GOAL_ALREADY_FULFILLED"],
+        "AU0038": ["GOAL_ALREADY_FULFILLED"],
+        "AU0039": ["LOOKALIKE_MERCHANT", "UNFAMILIAR_MERCHANT", "GOAL_ALREADY_FULFILLED"],
+        "AU0040": ["PROMPT_INJECTION", "GOAL_ALREADY_FULFILLED"],
+        "AU0041": ["OVER_PER_ORDER_LIMIT", "UNREQUESTED_ADDON", "OFF_SCOPE_ITEM", "ITEM_SHOP_MISMATCH", "GOAL_ALREADY_FULFILLED"],
+        "AU0042": ["GOAL_ALREADY_FULFILLED"],
         "AU0043": ["OFF_SCOPE_ITEM", "ITEM_MISMATCH"],
-        "AU0044": ["UNFAMILIAR_MERCHANT"],
+        "AU0044": ["UNFAMILIAR_MERCHANT", "GOAL_ALREADY_FULFILLED"],
+        "AU0045": ["GOAL_ALREADY_FULFILLED"],
     }
 
     # Expect an unanswered question to stay pending, so its amount counts as not approved
     assert (result_table.query("decision == 'approve'")["final_status"] == "approved").all()
     assert (result_table.query("decision == 'step_up'")["final_status"] == "pending").all()
     assert (result_table.query("decision == 'decline'")["final_status"] == "declined").all()
-    assert summary["total_approved_chf"] == Decimal("3026.45")
-    assert summary["total_declined_or_pending_chf"] == Decimal("5899.28")
+    assert summary["total_approved_chf"] == Decimal("1538.05")
+    assert summary["total_declined_or_pending_chf"] == Decimal("7387.68")
+
+
+
+# Find the result of one guard in the full decision record of one purchase
+def find_guard_entry(record, guard_id):
+    return next(guard_entry for guard_entry in record["trace"]["guards"] if guard_entry["guard_id"] == guard_id)
+
+
+
+# State the purchases that order the one requested thing after that thing was already bought in their run
+SOURCES_OF_A_SECOND_ORDER = [
+    "AU0013", "AU0014", "AU0015", "AU0016", "AU0018", "AU0019", "AU0021", "AU0022", "AU0023",
+    "AU0036", "AU0037", "AU0038", "AU0039", "AU0040", "AU0041", "AU0042", "AU0044", "AU0045",
+]
+
+
+
+# Check that the question about a thing already bought is asked on every later order for that thing under the two instructions that ask for one thing,
+# and never on the first order, on an order for another thing or under an instruction that asks for no single thing.
+# The question rests on approved orders only, it names the first of them on the Swiss clock, and no purchase carries the note any more.
+# The check runs last on every purchase, so its reason follows every other reason.
+def test_engine_asks_about_a_goal_already_bought(results_with_engine):
+    records = [purchase_result["record"] for purchase_result in results_with_engine]
+    sources_with_the_question = sorted(record["source_authorization_id"] for record in records if find_guard_entry(record, "goal_fulfilled")["verdict"] == "STEP_UP")
+    sources_with_the_note = sorted(record["source_authorization_id"] for record in records if find_guard_entry(record, "goal_fulfilled")["note"] is not None)
+    assert sources_with_the_question == SOURCES_OF_A_SECOND_ORDER
+    assert sources_with_the_note == []
+    records_by_source_id = {record["source_authorization_id"]: record for record in records}
+    assert find_guard_entry(records_by_source_id["AU0036"], "goal_fulfilled")["customer_message"] == "You already bought this earlier, on 12 August at 11.40. This order would be a second one. Approve it anyway?"
+    assert records_by_source_id["AU0019"]["trace"]["notes"] == []
+    assert {find_guard_entry(records_by_source_id[source_id], "goal_fulfilled")["reason_code"] for source_id in SOURCES_OF_A_SECOND_ORDER} == {"GOAL_ALREADY_FULFILLED"}
+    assert {records_by_source_id[source_id]["reason_codes"][-1] for source_id in SOURCES_OF_A_SECOND_ORDER} == {"GOAL_ALREADY_FULFILLED"}
+    assert {record["trace"]["guards"][-1]["guard_id"] for record in records} == {"goal_fulfilled"}
+
+
+
+# Check that the customer reads the finding that matters most. A return policy that is not stated and an overshoot of the limit keep their own message
+# on a second order of the requested thing, and the question about the second order shows when nothing else asks.
+def test_customer_reads_the_finding_that_matters_most(results_with_engine):
+    records_by_source_id = {purchase_result["record"]["source_authorization_id"]: purchase_result["record"] for purchase_result in results_with_engine}
+    return_policy_record = records_by_source_id["AU0016"]
+    overshoot_record = records_by_source_id["AU0021"]
+    second_order_record = records_by_source_id["AU0019"]
+    assert return_policy_record["customer_message"] == find_guard_entry(return_policy_record, "order_terms")["customer_message"]
+    assert return_policy_record["customer_message"].startswith("The shop does not state its return policy")
+    assert return_policy_record["trace"]["aggregation"]["raised_by"] == ["order_terms", "goal_fulfilled"]
+    assert overshoot_record["customer_message"] == find_guard_entry(overshoot_record, "per_order_limit")["customer_message"]
+    assert overshoot_record["customer_message"].endswith(" Approve anyway?")
+    assert "already bought" not in overshoot_record["customer_message"]
+    assert overshoot_record["trace"]["aggregation"]["raised_by"] == ["per_order_limit", "goal_fulfilled"]
+    assert second_order_record["customer_message"] == "You already bought this earlier, on 11 August at 12.15. This order would be a second one. Approve it anyway?"
+    assert second_order_record["trace"]["aggregation"]["raised_by"] == ["goal_fulfilled"]
+
+
+
+# Check that a new attempt after a declined order passes the check for repeated orders with its informative reason, which stays out of the reasons of the decision.
+# The attempt is a second order of the requested thing, so the customer is asked on that ground alone.
+def test_engine_passes_a_new_attempt_after_a_declined_order(results_with_engine):
+    records_by_source_id = {purchase_result["record"]["source_authorization_id"]: purchase_result["record"] for purchase_result in results_with_engine}
+    guard_entry = find_guard_entry(records_by_source_id["AU0042"], "duplicate_order")
+    assert guard_entry["verdict"] == "PASS"
+    assert guard_entry["reason_code"] == "RE_QUOTE_COMPLIANT"
+    assert records_by_source_id["AU0042"]["decision"] == "step_up"
+    assert records_by_source_id["AU0042"]["reason_codes"] == ["GOAL_ALREADY_FULFILLED"]
+
+
+
+# Check that the run remembers the cart of every earlier purchase, and that the cart never travels in a message, whose format allows five keys only
+def test_run_remembers_the_carts_and_the_messages_carry_five_keys(results_with_engine):
+    recent_authorizations = [
+        recent_authorization
+        for purchase_result in results_with_engine
+        for recent_authorization in purchase_result["message"]["context"]["recent_authorizations"]
+    ]
+    assert len(recent_authorizations) > 0
+    assert {tuple(recent_authorization) for recent_authorization in recent_authorizations} == {replay.RECENT_AUTHORIZATION_KEYS}
+    cart_line_counts = [len(purchase_result["record"]["trace"]["facts"]["cart_lines"]) for purchase_result in results_with_engine]
+    assert sum(cart_line_counts) == 56
+    assert min(cart_line_counts) >= 1
 
 
 
@@ -484,17 +573,51 @@ def test_comparison_counts_the_matches_of_both_baselines(results_without_control
     compared_with_limit_only = replay.compare_with_reference_decisions(replay.build_result_table(results_with_limit_only))
     assert len(compared_without_control) == 45
     assert len(compared_with_limit_only) == 45
-    assert int((compared_without_control["decision_match"] == "match").sum()) == 17
-    assert int((compared_with_limit_only["decision_match"] == "match").sum()) == 20
+    assert int((compared_without_control["decision_match"] == "match").sum()) == 12
+    assert int((compared_with_limit_only["decision_match"] == "match").sum()) == 15
     decision_position = list(compared_with_limit_only.columns).index("decision")
-    assert list(compared_with_limit_only.columns)[decision_position:decision_position + 3] == ["decision", "decision_on_own_facts", "decision_match"]
+    assert list(compared_with_limit_only.columns)[decision_position:decision_position + 3] == ["decision", "decision_in_sequence", "decision_match"]
 
 
 
-# Check that the engine matches all 45 reference decisions with its sixteen built guards
+# Check that the engine matches all 45 reference decisions in sequence with its eighteen built guards
 def test_comparison_counts_the_matches_of_the_engine(results_with_engine):
     compared_with_engine = replay.compare_with_reference_decisions(replay.build_result_table(results_with_engine))
     assert len(compared_with_engine) == 45
+    assert replay.read_reference_column(compared_with_engine) == "decision_in_sequence"
+    assert int((compared_with_engine["decision_match"] == "match").sum()) == 45
+
+
+
+# Set the answer to a goal already bought to the note for one test only, through the environment, and read the settings afresh before and after
+@pytest.fixture
+def settings_with_the_note(monkeypatch):
+    monkeypatch.setenv("GOAL_FULFILLED_ACTION", "note")
+    get_settings.cache_clear()
+    yield
+    monkeypatch.undo()
+    get_settings.cache_clear()
+
+
+
+# Check that the note still works as before. A second order of the requested thing that is clean on its own facts is approved with the note,
+# and the run is compared with the reference decisions on the own facts of each purchase.
+def test_engine_with_the_note_approves_a_clean_second_order(replay_tables, settings_with_the_note):
+    assert get_settings().goal_fulfilled_action == "note"
+    purchase_results = replay_all_scenarios(replay_tables, replay.choose_decision_function())
+    result_table = replay.build_result_table(purchase_results)
+    summary = replay.summarize_replay(result_table)
+    assert len(list_sources_with_decision(result_table, "approve")) == 17
+    assert len(list_sources_with_decision(result_table, "step_up")) == 13
+    assert len(list_sources_with_decision(result_table, "decline")) == 15
+    assert summary["total_approved_chf"] == Decimal("3026.45")
+    assert summary["total_declined_or_pending_chf"] == Decimal("5899.28")
+    records = [purchase_result["record"] for purchase_result in purchase_results]
+    sources_with_the_note = sorted(record["source_authorization_id"] for record in records if find_guard_entry(record, "goal_fulfilled")["note"] is not None)
+    assert sources_with_the_note == SOURCES_OF_A_SECOND_ORDER
+    assert [record["source_authorization_id"] for record in records if "GOAL_ALREADY_FULFILLED" in record["reason_codes"]] == []
+    compared_with_engine = replay.compare_with_reference_decisions(result_table)
+    assert replay.read_reference_column(compared_with_engine) == "decision_on_own_facts"
     assert int((compared_with_engine["decision_match"] == "match").sum()) == 45
 
 
@@ -531,6 +654,8 @@ def test_command_line_run_writes_both_files(tmp_path, capsys):
     assert len(purchase_lines) == 10
     printed_summary = capsys.readouterr().out
     assert "matches" in printed_summary
+    assert "reference column decision_in_sequence" in printed_summary
+    assert "in the column decision_in_sequence" in (tmp_path / written_names[1]).read_text(encoding = "utf-8")
     assert "baseline limit_only" in printed_summary
     assert "Guards not built yet" not in printed_summary
 
@@ -556,6 +681,6 @@ def test_command_line_run_without_baseline_uses_the_engine(tmp_path, capsys):
     # Expect the line about the guards in the printed summary and in the markdown report, and no trace column in the report
     printed_summary = capsys.readouterr().out
     markdown_report = (tmp_path / written_names[1]).read_text(encoding = "utf-8")
-    assert "Guards not built yet - 7 of 23" in printed_summary
-    assert "Guards not built yet - 7 of 23" in markdown_report
+    assert "Guards not built yet - 5 of 23" in printed_summary
+    assert "Guards not built yet - 5 of 23" in markdown_report
     assert "trace_version" not in markdown_report

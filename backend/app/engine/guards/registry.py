@@ -10,7 +10,9 @@ from app.engine.guards.base import PlaceholderGuard
 from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
 from app.engine.guards.g_device import DeviceGuard
+from app.engine.guards.g_duplicate_order import DuplicateOrderGuard
 from app.engine.guards.g_geo import GeoGuard
+from app.engine.guards.g_goal_fulfilled import GoalFulfilledGuard
 from app.engine.guards.g_injection import InjectionGuard
 from app.engine.guards.g_item_match import ItemMatchGuard
 from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
@@ -80,7 +82,11 @@ GUARD_TABLE = (
 
 # State the order in which the guards run.
 # Guard 22 runs before guard 14, because guard 14 combines the signals of guards 10 to 13 and 22.
-EXECUTION_ORDER = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 22, 14, 15, 16, 17, 18, 19, 20, 21, 23)
+# Guard 16 runs last, because the customer reads the message of the first guard at the final severity.
+# Its question about a second order of the one requested thing then shows only when no other guard asks,
+# and never hides a finding that matters more, such as a return policy that is not stated.
+# The order changes no decision, because severity can only rise.
+EXECUTION_ORDER = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 22, 14, 15, 17, 18, 19, 20, 21, 23, 16)
 
 
 
@@ -100,6 +106,8 @@ BUILT_GUARD_CLASSES_BY_ID = {
     "velocity": VelocityGuard,
     "geo": GeoGuard,
     "session_integrity": SessionIntegrityGuard,
+    "duplicate_order": DuplicateOrderGuard,
+    "goal_fulfilled": GoalFulfilledGuard,
     "item_shop_consistency": ItemShopConsistencyGuard,
     "injection": InjectionGuard,
 }
