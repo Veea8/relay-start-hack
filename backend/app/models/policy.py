@@ -67,10 +67,12 @@ class Expectations(FrozenPolicyModel):
 
 
 
-    # Keep the allowed and the prohibited categories and the requested item
+    # Keep the allowed and the prohibited categories, the kind of shop and the requested item.
+    # A strict kind of shop means the instruction insists on it, as in "only from", so another kind of shop is refused and not asked about.
     allowed_item_categories: tuple[str, ...] = ()
     prohibited_item_categories: tuple[str, ...] = ()
     required_merchant_categories: tuple[str, ...] = ()
+    merchant_category_is_strict: bool = False
     requested_item: Optional[RequestedItem] = None
     no_addons: bool = False
 

@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from app.engine.guards.base import PlaceholderGuard
+from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
+from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
+from app.engine.guards.g_merchant_type import MerchantTypeGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.models.decision import GuardFamily
 
@@ -74,6 +77,9 @@ EXECUTION_ORDER = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 22, 14, 15, 16, 17
 BUILT_GUARD_CLASSES_BY_ID = {
     "per_order_limit": PerOrderLimitGuard,
     "category_scope": CategoryScopeGuard,
+    "addon": AddonGuard,
+    "merchant_type": MerchantTypeGuard,
+    "item_shop_consistency": ItemShopConsistencyGuard,
 }
 
 

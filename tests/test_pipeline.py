@@ -11,7 +11,10 @@ from pathlib import Path
 import pytest
 
 from app.engine.guards.base import PlaceholderGuard
+from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
+from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
+from app.engine.guards.g_merchant_type import MerchantTypeGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.engine.guards.registry import build_guard_pipeline, get_default_guard_pipeline, list_placeholder_guard_ids
 from app.engine.pipeline import decide
@@ -86,9 +89,9 @@ ONLY_ALLOWED_FUNCTION_START = "def collect_trace_identifiers(event):"
 
 
 # State an instruction with a clear limit that the CHF 20 of the example message meets exactly and with a kind of goods that its cart line is,
-# and the two guards that are built and therefore answer PASS instead of SKIP, in execution order
+# and the five guards that are built and therefore answer on the facts instead of as placeholders, in execution order
 CLEAR_LIMIT_INSTRUCTION = "Buy one grocery item for CHF 20 or less."
-BUILT_GUARD_IDS = ("per_order_limit", "category_scope")
+BUILT_GUARD_IDS = ("per_order_limit", "category_scope", "addon", "merchant_type", "item_shop_consistency")
 
 
 
@@ -237,8 +240,8 @@ def dump_trace_without_running_times(decision_trace):
 
 #### Step 3: Check the default pipeline ####
 
-# Check that the example message is approved by 21 placeholder guards and the two built guards, in the stated order
-def test_default_pipeline_approves_with_21_skipped_guards_and_two_passes(example_message):
+# Check that the example message is approved by 18 placeholder guards and the five built guards, in the stated order
+def test_default_pipeline_approves_with_18_skipped_guards_and_five_built_guards(example_message):
     decision_trace = decide_example(example_message)
     assert decision_trace.decision == Decision.APPROVE
     assert decision_trace.reason_codes == []
@@ -249,21 +252,25 @@ def test_default_pipeline_approves_with_21_skipped_guards_and_two_passes(example
     assert sorted(guard_result.guard_number for guard_result in decision_trace.guards) == list(range(1, 24))
     assert all(guard_result.elapsed_ms >= 0 for guard_result in decision_trace.guards)
 
-    # Expect SKIP with the reason that the guard is not built from the 21 placeholders, without evidence and without a message
+    # Expect SKIP with the reason that the guard is not built from the 18 placeholders, without evidence and without a message
     placeholder_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id not in BUILT_GUARD_IDS]
-    assert len(placeholder_results) == 21
+    assert len(placeholder_results) == 18
     assert {guard_result.verdict for guard_result in placeholder_results} == {GuardVerdict.SKIP}
     assert {guard_result.reason_code for guard_result in placeholder_results} == {ReasonCode.GUARD_NOT_BUILT}
     assert all(guard_result.evidence == [] and guard_result.customer_message is None for guard_result in placeholder_results)
 
     # Expect PASS from the limit per order, because CHF 20 meets a limit of CHF 20 or less,
-    # and PASS from the category scope, because the instruction asks for groceries and the one cart line is groceries
+    # PASS from the category scope, because the instruction asks for groceries and the one cart line is groceries,
+    # PASS from the add-on guard, because the cart holds the one unit the instruction asks for,
+    # SKIP from the merchant type, because the instruction names no kind of shop,
+    # and PASS from the item and shop check, because a groceries line is sold by a groceries shop
     built_results = [guard_result for guard_result in decision_trace.guards if guard_result.guard_id in BUILT_GUARD_IDS]
     assert [guard_result.guard_id for guard_result in built_results] == list(BUILT_GUARD_IDS)
-    assert [guard_result.verdict for guard_result in built_results] == [GuardVerdict.PASS, GuardVerdict.PASS]
-    assert [guard_result.reason_code for guard_result in built_results] == [None, None]
-    assert [len(guard_result.evidence) for guard_result in built_results] == [1, 1]
-    assert [guard_result.customer_message for guard_result in built_results] == [None, None]
+    assert [guard_result.verdict for guard_result in built_results] == [GuardVerdict.PASS, GuardVerdict.PASS, GuardVerdict.PASS, GuardVerdict.SKIP, GuardVerdict.PASS]
+    assert [guard_result.reason_code for guard_result in built_results] == [None] * 5
+    assert [len(guard_result.evidence) for guard_result in built_results] == [1] * 5
+    assert [guard_result.customer_message for guard_result in built_results] == [None] * 5
+    assert [guard_result.signal for guard_result in built_results] == [None] * 5
 
 
 
@@ -291,24 +298,28 @@ def test_every_guard_has_its_id_and_its_family(example_message):
 
 
 
-# Check that the registry builds 21 placeholders and the two built guards, as a tuple in execution order
-def test_registry_lists_21_placeholders_and_two_built_guards():
+# Check that the registry builds 18 placeholders and the five built guards, as a tuple in execution order
+def test_registry_lists_18_placeholders_and_five_built_guards():
     guards = build_guard_pipeline()
     assert isinstance(guards, tuple)
     assert len(guards) == 23
     assert [guard.guard_number for guard in guards] == EXPECTED_EXECUTION_ORDER
     built_guards = [guard for guard in guards if not isinstance(guard, PlaceholderGuard)]
-    assert len(built_guards) == 2
-    assert isinstance(built_guards[0], PerOrderLimitGuard)
-    assert isinstance(built_guards[1], CategoryScopeGuard)
-    assert (built_guards[0].guard_number, built_guards[0].guard_id, built_guards[0].family) == (3, "per_order_limit", GuardFamily.SPENDING_LIMITS)
-    assert (built_guards[1].guard_number, built_guards[1].guard_id, built_guards[1].family) == (6, "category_scope", GuardFamily.ITEM_AND_TERMS)
+    assert len(built_guards) == 5
+    assert [type(built_guard) for built_guard in built_guards] == [PerOrderLimitGuard, CategoryScopeGuard, AddonGuard, MerchantTypeGuard, ItemShopConsistencyGuard]
+    assert [(built_guard.guard_number, built_guard.guard_id, built_guard.family) for built_guard in built_guards] == [
+        (3, "per_order_limit", GuardFamily.SPENDING_LIMITS),
+        (6, "category_scope", GuardFamily.ITEM_AND_TERMS),
+        (7, "addon", GuardFamily.ITEM_AND_TERMS),
+        (8, "merchant_type", GuardFamily.SELLER),
+        (21, "item_shop_consistency", GuardFamily.ITEM_AND_TERMS),
+    ]
     assert list_placeholder_guard_ids(guards) == [
         EXPECTED_GUARDS_BY_NUMBER[guard_number][0]
         for guard_number in EXPECTED_EXECUTION_ORDER
         if EXPECTED_GUARDS_BY_NUMBER[guard_number][0] not in BUILT_GUARD_IDS
     ]
-    assert len(list_placeholder_guard_ids(guards)) == 21
+    assert len(list_placeholder_guard_ids(guards)) == 18
     assert list_placeholder_guard_ids([FixedVerdictGuard(1, "stub_pass", GuardVerdict.PASS)]) == []
 
 

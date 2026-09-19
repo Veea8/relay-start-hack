@@ -1,5 +1,5 @@
 # Script: facts.py
-# Purpose: Turn the amounts and the cart lines of one purchase message into exact decimals that every guard can compare safely
+# Purpose: Turn the amounts, the cart lines and the shop of one purchase message into exact decimals and typed facts that every guard can compare safely
 # Author: Andrés Gallardo
 # Date: September 2026
 
@@ -51,7 +51,19 @@ class LineFact:
 
 
 
-# Hold the amounts of one purchase as exact decimals, together with the currency of the purchase and the lines of the cart.
+# Hold what the platform states about the shop. The name is written by the shop and is kept for display only.
+# recurring_capable is a real boolean and says whether the shop can bill on a recurring basis.
+# No identifier of the shop is kept, so no guard can decide on one.
+@dataclass(frozen = True)
+class MerchantFact:
+    merchant_name: str
+    merchant_category: str
+    merchant_country: str
+    recurring_capable: bool
+
+
+
+# Hold the amounts of one purchase as exact decimals, together with the currency of the purchase, the lines of the cart and the shop.
 # billing_amount_chf is the amount in Swiss francs, while amount, items_subtotal and delivery_fee are in the purchase currency.
 @dataclass(frozen = True)
 class FactSheet:
@@ -61,6 +73,7 @@ class FactSheet:
     delivery_fee: Decimal
     currency: str
     lines: Tuple[LineFact, ...]
+    merchant: MerchantFact
 
 
 
@@ -87,7 +100,32 @@ def build_line_fact(cart_item):
 
 
 
-# Read the amounts and the cart lines of the purchase and nothing else, so the fact sheet depends on no clock and on no identifier
+# Map the two texts the message may carry for a yes or no fact to a real boolean
+BOOLEAN_BY_TEXT = {"true": True, "false": False}
+
+
+
+# Read a yes or no fact from its text. Only the exact texts "true" and "false" count, and anything else stops the decision,
+# because Python would read every text that is not empty as true, the text "false" included.
+def read_true_or_false(text):
+    if not isinstance(text, str) or text not in BOOLEAN_BY_TEXT:
+        raise ValueError("Expected the text true or false, found " + repr(text))
+    return BOOLEAN_BY_TEXT[text]
+
+
+
+# Read what the platform states about the shop, without any identifier
+def build_merchant_fact(merchant):
+    return MerchantFact(
+        merchant_name = merchant.merchant_name,
+        merchant_category = merchant.merchant_category,
+        merchant_country = merchant.merchant_country,
+        recurring_capable = read_true_or_false(merchant.recurring_capable),
+    )
+
+
+
+# Read the amounts, the cart lines and the shop of the purchase and nothing else, so the fact sheet depends on no clock and on no identifier
 def build_fact_sheet(event):
     return FactSheet(
         billing_amount_chf = to_money(event.authorization.billing_amount_chf),
@@ -96,4 +134,5 @@ def build_fact_sheet(event):
         delivery_fee = to_money(event.authorization.delivery_fee),
         currency = event.authorization.currency,
         lines = tuple(build_line_fact(cart_item) for cart_item in event.authorization.items),
+        merchant = build_merchant_fact(event.authorization.merchant),
     )

@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 from app.models.events import MandateRule, read_purchase_message
+from app.models.policy import RequestedItem
 from app.policyc.compiler import build_policy_from_mandate
 from app.policyc.order_limit import OrderLimitReading, read_order_limit
 
@@ -331,14 +332,17 @@ def test_handed_in_share_of_zero_reaches_the_policy(example_message):
 
 
 
-# Check that every other expectation stays at its default
+# Check that every expectation no reader fills stays at its default.
+# The sentence asks for one grocery item, so the requested item holds one unit, and it names no kind of shop and forbids no extras.
 def test_other_expectations_stay_at_their_defaults(example_message):
     mandate = read_mandate_with_instruction(example_message, GROCERY_INSTRUCTION)
     expectations = build_policy_from_mandate(mandate).expectations
     assert expectations.period_limit_chf is None
     assert expectations.allowed_item_categories == ("groceries",)
     assert expectations.prohibited_item_categories == ()
-    assert expectations.requested_item is None
+    assert expectations.requested_item == RequestedItem(kind_keywords = (), max_quantity = 1, goal_quantity = 1)
     assert expectations.no_addons is False
+    assert expectations.required_merchant_categories == ()
+    assert expectations.merchant_category_is_strict is False
     assert expectations.merchant_familiarity == "any"
     assert expectations.session_sensitivity == "normal"

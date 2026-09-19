@@ -305,11 +305,33 @@ def read_rule_categories(rule, list_operator, single_operator):
 
 
 
-# Read the allowed and the prohibited categories of all rules, where every rule on another field is ignored
+# Hold what all rules say together, and whether their allowed lists contradict each other
+@dataclass(frozen = True)
+class RuleScope:
+    allowed_categories: frozenset
+    prohibited_categories: frozenset
+    allowed_lists_contradict: bool
+
+
+
+# Read the allowed and the prohibited categories of all rules, where every rule on another field is ignored.
+# Every rule must hold, so the allowed lists of several rules count only where they overlap, and a rule that names no category is left out.
+# When the lists share nothing, the list of the last rule counts, because a rule that was added later is the newer wish.
+# Lists that share nothing never end as an empty set, because an empty set means that nothing is stated.
+# The prohibited categories of several rules add up.
 def read_rule_scope(hard_rules):
-    allowed_categories = frozenset().union(*(read_rule_categories(rule, "in", "=") for rule in hard_rules))
+    allowed_lists = tuple(
+        rule_categories
+        for rule_categories in (read_rule_categories(rule, "in", "=") for rule in hard_rules)
+        if len(rule_categories) > 0
+    )
     prohibited_categories = frozenset().union(*(read_rule_categories(rule, "not_in", "!=") for rule in hard_rules))
-    return allowed_categories, prohibited_categories
+    if len(allowed_lists) == 0:
+        return RuleScope(frozenset(), prohibited_categories, False)
+    shared_categories = frozenset.intersection(*allowed_lists)
+    if len(shared_categories) > 0:
+        return RuleScope(shared_categories, prohibited_categories, False)
+    return RuleScope(allowed_lists[-1], prohibited_categories, True)
 
 
 
@@ -333,8 +355,9 @@ def describe_categories(item_categories):
 def read_item_scope(instruction, hard_rules, item_catalogue):
     categories_by_catalogue_word = build_categories_by_catalogue_word(item_catalogue)
     instruction_allowed, instruction_prohibited = read_instruction_scope(instruction, categories_by_catalogue_word)
-    rule_allowed, rule_prohibited = read_rule_scope(tuple(hard_rules or ()))
-    prohibited_categories = instruction_prohibited | rule_prohibited
+    rule_scope = read_rule_scope(tuple(hard_rules or ()))
+    rule_allowed = rule_scope.allowed_categories
+    prohibited_categories = instruction_prohibited | rule_scope.prohibited_categories
 
 
 
@@ -353,6 +376,16 @@ def read_item_scope(instruction, hard_rules, item_catalogue):
     else:
         allowed_categories = instruction_allowed | rule_allowed
         open_questions = ()
+
+
+
+    # Tell the customer when the stored rules contradict each other. This one question stands alone,
+    # because it already asks which goods the instruction should cover.
+    if rule_scope.allowed_lists_contradict:
+        open_questions = (
+            "The stored rules contradict each other, because no kind of goods is allowed by all of them. The last rule was followed, which allows only "
+            + describe_categories(rule_allowed) + ". Which goods should this instruction cover?",
+        )
 
     return ItemScopeReading(
         allowed_item_categories = tuple(sorted(allowed_categories - prohibited_categories)),

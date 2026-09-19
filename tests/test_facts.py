@@ -1,5 +1,5 @@
 # Script: test_facts.py
-# Purpose: Check that amounts become exact decimals with half-even rounding, that the cart lines are read exactly and that the fact sheet of a purchase cannot be changed
+# Purpose: Check that amounts become exact decimals with half-even rounding, that the cart lines and the shop are read exactly and that the fact sheet of a purchase cannot be changed
 # Author: Andrés Gallardo
 # Date: September 2026
 
@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.engine.facts import FactSheet, LineFact, build_fact_sheet, to_money
+from app.engine.facts import FactSheet, LineFact, MerchantFact, build_fact_sheet, read_true_or_false, to_money
 from app.models.events import read_purchase_message
 
 
@@ -115,3 +115,49 @@ def test_lines_are_frozen(example_message):
     assert isinstance(fact_sheet.lines, tuple)
     with pytest.raises(dataclasses.FrozenInstanceError):
         fact_sheet.lines[0].item_category = "electronics"
+
+
+
+
+
+
+
+
+
+#### Step 4: Check the shop ####
+
+# Check the shop of the example message field by field, and that it carries no identifier
+def test_merchant_of_the_example_message(example_message):
+    fact_sheet = build_fact_sheet(read_purchase_message(example_message))
+    assert fact_sheet.merchant == MerchantFact(
+        merchant_name = "Example Market",
+        merchant_category = "groceries",
+        merchant_country = "CH",
+        recurring_capable = False,
+    )
+    assert [merchant_field.name for merchant_field in dataclasses.fields(MerchantFact)] == ["merchant_name", "merchant_category", "merchant_country", "recurring_capable"]
+
+
+
+# Check that the two texts of the message become real booleans, so the text "false" is never read as true
+@pytest.mark.parametrize("recurring_capable_text, expected_boolean", [("true", True), ("false", False)])
+def test_recurring_capable_becomes_a_real_boolean(example_message, recurring_capable_text, expected_boolean):
+    example_message["authorization"]["merchant"]["recurring_capable"] = recurring_capable_text
+    fact_sheet = build_fact_sheet(read_purchase_message(example_message))
+    assert fact_sheet.merchant.recurring_capable is expected_boolean
+
+
+
+# Check that nothing but the exact texts "true" and "false" is read, neither another spelling nor a value that is no text
+@pytest.mark.parametrize("unreadable_value", ["True", "FALSE", "yes", "1", "", " true", True, False, 1, 0, None])
+def test_anything_but_true_and_false_is_refused(unreadable_value):
+    with pytest.raises(ValueError, match = "true or false"):
+        read_true_or_false(unreadable_value)
+
+
+
+# Check that the shop cannot be changed after it was built
+def test_merchant_is_frozen(example_message):
+    fact_sheet = build_fact_sheet(read_purchase_message(example_message))
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        fact_sheet.merchant.recurring_capable = True

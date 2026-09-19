@@ -117,6 +117,8 @@ RULE_CASES = [
     RuleCase("rule with a number as value is ignored", CLOTHING_INSTRUCTION, (MandateRule(field = "item_category", operator = "=", value = 5),), ("clothing",), (), False),
     RuleCase("rule on the amount is ignored", CLOTHING_INSTRUCTION, (MandateRule(field = "billing_amount_chf", operator = "<=", value = 250),), ("clothing",), (), False),
     RuleCase("rule alone gives its list", INSTRUCTION_WITHOUT_CATEGORY_WORDS, (MandateRule(field = "item_category", operator = "in", value = ("hotel", "books")),), ("books", "hotel"), (), False),
+    RuleCase("two allowed rules count where they overlap", CLOTHING_INSTRUCTION, (MandateRule(field = "item_category", operator = "in", value = ("clothing", "books")), MandateRule(field = "item_category", operator = "in", value = ("clothing",))), ("clothing",), (), False),
+    RuleCase("two allowed rules that share nothing give the last one and a question", CLOTHING_INSTRUCTION, (MandateRule(field = "item_category", operator = "in", value = ("clothing",)), MandateRule(field = "item_category", operator = "in", value = ("books",))), ("books",), (), True),
     RuleCase("two rules add up", CLOTHING_INSTRUCTION, (MandateRule(field = "item_category", operator = "not_in", value = ("cosmetics",)), MandateRule(field = "item_category", operator = "!=", value = "gift_card")), ("clothing",), ("cosmetics", "gift_card"), False),
 ]
 
@@ -291,6 +293,26 @@ def test_question_names_both_sides(item_catalogue):
     reading = read_item_scope(CLOTHING_INSTRUCTION, rules, item_catalogue)
     assert reading.open_questions == (
         "The instruction names clothing, while the stored rules allow only gift card. The rules were followed. Which goods should this instruction cover?",
+    )
+
+
+
+
+
+
+
+
+
+# Check that the question about rules that contradict each other names the rule that was followed, and stands alone
+def test_question_about_contradicting_rules_names_the_last_rule(item_catalogue):
+    rules = (
+        MandateRule(field = "item_category", operator = "in", value = ("clothing",)),
+        MandateRule(field = "item_category", operator = "in", value = ("books",)),
+    )
+    reading = read_item_scope(CLOTHING_INSTRUCTION, rules, item_catalogue)
+    assert reading.open_questions == (
+        "The stored rules contradict each other, because no kind of goods is allowed by all of them. "
+        "The last rule was followed, which allows only books. Which goods should this instruction cover?",
     )
 
 

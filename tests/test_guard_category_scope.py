@@ -374,14 +374,14 @@ def test_shop_text_cannot_move_a_line_into_the_scope(example_message):
 
 # Check the household sentence end to end, through the compiler and the whole pipeline
 @pytest.mark.parametrize(
-    "lines, expected_decision, expected_reason_codes",
+    "lines, expected_decision, expected_reason_codes, expected_raised_by",
     [
-        ((PRODUCE_LINE,), Decision.APPROVE, []),
-        ((PRODUCE_LINE, FRAGRANCE_LINE), Decision.STEP_UP, [ReasonCode.OFF_SCOPE_ITEM]),
-        ((FRAGRANCE_LINE,), Decision.DECLINE, [ReasonCode.OFF_SCOPE_ITEM]),
+        ((PRODUCE_LINE,), Decision.APPROVE, [], []),
+        ((PRODUCE_LINE, FRAGRANCE_LINE), Decision.STEP_UP, [ReasonCode.OFF_SCOPE_ITEM, ReasonCode.UNREQUESTED_ADDON], ["category_scope", "addon"]),
+        ((FRAGRANCE_LINE,), Decision.DECLINE, [ReasonCode.OFF_SCOPE_ITEM], ["category_scope"]),
     ],
 )
-def test_instruction_to_decision_end_to_end(example_message, lines, expected_decision, expected_reason_codes):
+def test_instruction_to_decision_end_to_end(example_message, lines, expected_decision, expected_reason_codes, expected_raised_by):
     event = build_event(example_message, lines, instruction = "Order our household groceries for delivery, at most CHF 120 per order.")
     policy = build_policy_from_mandate(event.mandate)
     decision_trace = decide(event, policy, None)
@@ -390,7 +390,7 @@ def test_instruction_to_decision_end_to_end(example_message, lines, expected_dec
     assert policy.expectations.per_order_limit_chf == Decimal("120")
     assert decision_trace.decision == expected_decision
     assert decision_trace.reason_codes == expected_reason_codes
-    assert decision_trace.aggregation.raised_by == ([] if expected_decision == Decision.APPROVE else ["category_scope"])
+    assert decision_trace.aggregation.raised_by == expected_raised_by
     assert len(decision_trace.guards) == 23
 
 
@@ -412,7 +412,7 @@ def test_limit_decline_comes_before_the_scope_question(example_message):
     event = build_event(example_message, lines, billing_amount_chf = 459.00, instruction = "Buy the monitor I chose for CHF 400 or less.")
     decision_trace = decide(event, build_policy_from_mandate(event.mandate), None)
     assert decision_trace.decision == Decision.DECLINE
-    assert decision_trace.reason_codes == [ReasonCode.OVER_PER_ORDER_LIMIT, ReasonCode.OFF_SCOPE_ITEM]
+    assert decision_trace.reason_codes == [ReasonCode.OVER_PER_ORDER_LIMIT, ReasonCode.OFF_SCOPE_ITEM, ReasonCode.UNREQUESTED_ADDON, ReasonCode.ITEM_SHOP_MISMATCH]
     assert decision_trace.aggregation.raised_by == ["per_order_limit"]
 
 

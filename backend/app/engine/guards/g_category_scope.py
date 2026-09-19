@@ -3,9 +3,9 @@
 # Author: Andrés Gallardo
 # Date: September 2026
 
-import unicodedata
 from dataclasses import dataclass
 
+from app.engine.display import clean_shop_text, describe_categories, describe_francs, describe_lines
 from app.engine.guards.base import build_guard_result
 from app.models.decision import EvidenceItem, GuardFamily, GuardVerdict, ReasonCode
 
@@ -37,56 +37,11 @@ SHOWN_ITEM_NAME_LENGTH = 60
 
 
 
-#### Step 2: Write the cart lines for the customer ####
+#### Step 2: Make an item name safe to show ####
 
-# Write an amount in Swiss francs with two decimals
-def describe_francs(amount_chf):
-    return f"CHF {amount_chf:.2f}"
-
-
-
-# Write a category name with spaces for underscores
-def describe_category(item_category):
-    return item_category.replace("_", " ")
-
-
-
-# Write a list in plain words, as in "groceries", "groceries and household" and "books, clothing and hotel"
-def join_in_words(texts):
-    if len(texts) <= 1:
-        return "".join(texts)
-    return ", ".join(texts[:-1]) + " and " + texts[-1]
-
-
-
-# Write a list of category names in plain words
-def describe_categories(item_categories):
-    return join_in_words([describe_category(item_category) for item_category in item_categories])
-
-
-
-# Make an item name safe to show. The shop wrote it, so it is quoted material and never part of the message itself.
-# Control characters and line breaks become spaces, a double quote becomes a single one so the quotation cannot be closed early,
-# runs of whitespace shrink to one space, and the name is cut to a fixed length.
+# Clean an item name with the shared cleaning of shop text, cut to the length stated above
 def clean_item_name(item_name):
-    name_without_control_characters = "".join(
-        " " if unicodedata.category(character).startswith("C") else character
-        for character in item_name
-    )
-    name_on_one_line = " ".join(name_without_control_characters.replace("\"", "'").split())
-    return name_on_one_line[:SHOWN_ITEM_NAME_LENGTH].strip()
-
-
-
-# Write one cart line with its quoted name, its category and its amount in its own currency
-def describe_line(line):
-    return "\"" + clean_item_name(line.item_name) + "\" (" + describe_category(line.item_category) + f", {line.currency} {line.line_total:.2f})"
-
-
-
-# Write several cart lines, separated by commas
-def describe_lines(lines):
-    return ", ".join(describe_line(line) for line in lines)
+    return clean_shop_text(item_name, SHOWN_ITEM_NAME_LENGTH)
 
 
 
