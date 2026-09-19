@@ -297,6 +297,11 @@ class DecisionWorker:
 
 
 
+        # Let the service replace what the status event carries, so the stream sends the same object as the status endpoint
+        self.status_describer = None
+
+
+
     # Read the human answer window, from the platform when known
     @property
     def human_timeout_seconds(self):
@@ -323,9 +328,10 @@ class DecisionWorker:
 
 
 
-    # Tell every interface how the worker is doing
+    # Tell every interface how the worker is doing, with the whole service status when the service asked for that
     def publish_status(self):
-        self.broadcaster.publish("status", self.describe())
+        describe = self.status_describer if self.status_describer is not None else self.describe
+        self.broadcaster.publish("status", describe())
 
 
 

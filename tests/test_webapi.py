@@ -119,14 +119,33 @@ def test_tighten_and_revoke(api):
 
 
 
-# The worker can be started for a run someone else starts, and stopped
+# The screen may name the mandate it holds in the path, and a mandate that is not the current one is refused
+def test_tighten_and_revoke_with_the_mandate_in_the_path(api):
+    client, service, platform = api
+    draft = client.post("/api/policy/draft", json = {"instruction": INSTRUCTION, "hard_rules": [EXPECTED_RULE]}).json()
+    mandate_id = client.post("/api/policy/confirm", json = {"draft_id": draft["draft_id"]}).json()["mandate_id"]
+    refused = client.patch("/api/policy/TM_other", json = {"uncertainty_policy": "decline"})
+    assert refused.status_code == 409 and "not the current mandate" in refused.json()["error"]["message"]
+    assert client.delete("/api/policy/TM_other").status_code == 409
+    tightened = client.patch("/api/policy/" + mandate_id, json = {"uncertainty_policy": "decline"}).json()
+    assert tightened["uncertainty_policy"] == "decline" and tightened["mandate_id"] == mandate_id
+    assert client.get("/api/policy").json()["policy"]["uncertainty_policy"] == "decline"
+    assert client.delete("/api/policy/" + mandate_id).json()["status"] == "revoked"
+
+
+
+# The worker can be started for a run someone else starts, and stopped, and the stream carries the whole status each time
 def test_worker_start_and_stop(api):
     client, service, platform = api
     assert client.get("/api/status").json()["worker"]["state"] == "idle"
+    queue = service.broadcaster.subscribe()
     started = client.post("/api/worker/start", json = {"continuous": True}).json()
     assert started["state"] == "polling" and started["continuous"] is True
     stopped = client.post("/api/worker/stop").json()
     assert stopped["state"] == "idle"
+    event_name, payload = queue.get_nowait()
+    assert event_name == "status" and payload["worker"]["state"] == "polling" and payload["engine_mode"] == "deterministic"
+    service.broadcaster.unsubscribe(queue)
 
 
 

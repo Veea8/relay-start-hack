@@ -71,6 +71,7 @@ class RelayService:
         self.started_at = None
         self.bootstrap_payload = None
         self.bootstrap_error = None
+        self.worker.status_describer = self.describe_status
 
 
 
@@ -259,21 +260,35 @@ class RelayService:
 
 
 
-    # Describe the mandate with its compiled policy for the policy screen
+    # Describe the mandate with its compiled policy for the policy screen, where a mandate the compiler cannot read still shows
     async def describe_current_mandate(self, refresh = True):
         mandate = await self.get_current_mandate(refresh)
         if mandate is None:
             return None
-        policy_view = self.compile_policy(mandate["instruction"], mandate["uncertainty_policy"], mandate["hard_rules"])
-        return {"mandate": mandate, "policy": policy_view}
+        try:
+            policy_view = self.compile_policy(mandate["instruction"], mandate["uncertainty_policy"], mandate["hard_rules"])
+            policy_error = None
+        except (ValueError, AssertionError) as compile_error:
+            policy_view = None
+            policy_error = "The stored mandate could not be compiled - " + str(compile_error)
+        return {"mandate": mandate, "policy": policy_view, "policy_error": policy_error}
+
+
+
+    # Read the current mandate for a change, and refuse when the screen names a different mandate than the one this backend works with
+    async def current_mandate_for_change(self, mandate_id = None):
+        mandate = await self.get_current_mandate(refresh = False)
+        if mandate is None:
+            raise ServiceError(409, "No mandate is confirmed yet")
+        if mandate_id is not None and mandate_id != mandate["mandate_id"]:
+            raise ServiceError(409, "The mandate " + mandate_id + " is not the current mandate, which is " + mandate["mandate_id"])
+        return mandate
 
 
 
     # Tighten the mandate, adding rules and moving uncertainty to decline, and never loosening anything
-    async def tighten_mandate(self, add_rules = (), uncertainty_policy = None):
-        mandate = await self.get_current_mandate(refresh = False)
-        if mandate is None:
-            raise ServiceError(409, "No mandate is confirmed yet")
+    async def tighten_mandate(self, add_rules = (), uncertainty_policy = None, mandate_id = None):
+        mandate = await self.current_mandate_for_change(mandate_id)
         if uncertainty_policy is not None and uncertainty_policy != "decline":
             raise ServiceError(400, "The uncertainty policy can only be tightened to decline")
         hard_rules = None
@@ -295,10 +310,8 @@ class RelayService:
 
 
     # Revoke the mandate, which withdraws the permission on the platform
-    async def revoke_mandate(self):
-        mandate = await self.get_current_mandate(refresh = False)
-        if mandate is None:
-            raise ServiceError(409, "No mandate is confirmed yet")
+    async def revoke_mandate(self, mandate_id = None):
+        mandate = await self.current_mandate_for_change(mandate_id)
         try:
             platform_answer = await self.client.revoke_mandate(mandate["mandate_id"])
         except (LeashApiError, httpx.HTTPError) as platform_error:

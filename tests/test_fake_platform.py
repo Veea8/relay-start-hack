@@ -76,6 +76,7 @@ def test_offline_platform_serves_the_public_purchases():
         client = build_test_client(platform)
         bootstrap = await client.bootstrap()
         assert {scenario["scenario_id"]: scenario["event_count"] for scenario in bootstrap["scenarios"]} == {"SCEN0000": 1, "SCEN0001": 10, "SCEN0002": 12, "SCEN0003": 11, "SCEN0004": 11}
+        assert bootstrap["scenarios"][0]["name"] == "Connection check" and bootstrap["scenarios"][1]["name"] == "Household budget"
         draft = await client.create_mandate("Buy clothing for at most CHF 250 per order.", [], "ask")
         mandate = await client.confirm_mandate(draft["draft_id"])
         await client.start_scenario_run("SCEN0003", mandate["mandate_id"])

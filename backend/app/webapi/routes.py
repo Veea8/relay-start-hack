@@ -150,21 +150,23 @@ async def read_policy(request: Request):
 
 
 
-# Tighten the current mandate
+# Tighten the current mandate, where the path may name the mandate the screen holds and is refused when it is not the current one
 @router.patch("/policy")
-async def tighten_policy(body: TightenBody, request: Request):
+@router.patch("/policy/{mandate_id}")
+async def tighten_policy(body: TightenBody, request: Request, mandate_id: Optional[str] = None):
     try:
-        return await service_of(request).tighten_mandate(body.add_rules, body.uncertainty_policy)
+        return await service_of(request).tighten_mandate(body.add_rules, body.uncertainty_policy, mandate_id = mandate_id)
     except ServiceError as service_error:
         return error_response(service_error)
 
 
 
-# Revoke the current mandate
+# Revoke the current mandate, where the path may name the mandate the screen holds and is refused when it is not the current one
 @router.delete("/policy")
-async def revoke_policy(request: Request):
+@router.delete("/policy/{mandate_id}")
+async def revoke_policy(request: Request, mandate_id: Optional[str] = None):
     try:
-        return await service_of(request).revoke_mandate()
+        return await service_of(request).revoke_mandate(mandate_id = mandate_id)
     except ServiceError as service_error:
         return error_response(service_error)
 
