@@ -28,6 +28,40 @@ export interface GuardResult {
   elapsed_ms: number;
 }
 
+// The trust score is derived by the backend from the guard verdicts of a trace. Every point taken is listed as a deduction.
+export type TrustBand = "trusted" | "review" | "blocked" | "not_assessed";
+
+export interface TrustDeduction {
+  kind: "leading_finding" | "further_finding" | "doubt" | "signal";
+  guard_id: string;
+  family: GuardFamily | null;
+  verdict: GuardVerdict | null;
+  reason_code: string | null;
+  signal_name: string | null;
+  points: number;
+  capped: boolean;
+  detail: string;
+}
+
+export interface TrustFamilyScore {
+  family: GuardFamily;
+  strictest_verdict: GuardVerdict;
+  points_lost: number;
+}
+
+export interface TrustScore {
+  version: string;
+  score: number | null;
+  band: TrustBand;
+  label: string;
+  summary: string;
+  scale: { start: number; trusted_from: number; review_from: number };
+  deductions: TrustDeduction[];
+  families: TrustFamilyScore[];
+  coverage: { checks_total: number; checks_evaluated: number; checks_not_applicable: number; checks_not_built: number; checks_failed: number; coverage_share: number };
+  basis: { decision: Decision; uncertainty_policy: string; engine_version: string; trace_version: string; llm_mode: string };
+}
+
 export interface DecisionTrace {
   trace_version: string;
   engine_version: string;
@@ -67,6 +101,8 @@ export interface DecisionTrace {
   llm: { mode: string; calls: Record<string, unknown>[] };
   timings: { total_ms: number };
   resolution: Record<string, unknown> | null;
+  // Filled by the adapter from the record's trust_score; absent on a trace that predates the score.
+  trust?: TrustScore | null;
 }
 
 export interface PendingAuthorization {
@@ -150,4 +186,5 @@ export interface DecisionRecord {
   trace: DecisionTrace | null;
   problems: string[];
   resolution: Record<string, unknown> | null;
+  trust_score?: TrustScore | null;
 }

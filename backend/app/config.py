@@ -116,6 +116,12 @@ class Settings(BaseSettings):
 
 
 
+    # Send the trust score of a decision to the platform as three evidence items next to the evidence of the guards.
+    # Switched off, the score is still computed, stored and shown, and only the answer to the platform leaves it out.
+    trust_score_in_evidence: bool = True
+
+
+
 
 
 

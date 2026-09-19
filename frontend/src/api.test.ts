@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { normalizeCurrentPolicy, normalizeStatus, pendingFromRecord, traceFromRecord } from "./api";
 import { mockPolicy } from "./mockData";
-import type { DecisionRecord, DecisionTrace } from "./types";
+import type { DecisionRecord, DecisionTrace, TrustScore } from "./types";
+
+const trust: TrustScore = {
+  version: "1",
+  score: 60,
+  band: "review",
+  label: "Needs your decision",
+  summary: "Per order limit asked for your decision (small overshoot).",
+  scale: { start: 100, trusted_from: 70, review_from: 35 },
+  deductions: [
+    { kind: "leading_finding", guard_id: "per_order_limit", family: "Spending limits", verdict: "STEP_UP", reason_code: "SMALL_OVERSHOOT", signal_name: null, points: 40, capped: false, detail: "Per order limit asked for your decision (small overshoot)" },
+  ],
+  families: [],
+  coverage: { checks_total: 23, checks_evaluated: 5, checks_not_applicable: 0, checks_not_built: 18, checks_failed: 0, coverage_share: 0.217 },
+  basis: { decision: "step_up", uncertainty_policy: "ask", engine_version: "relay-0.1.0", trace_version: "1", llm_mode: "off" },
+};
 
 const trace: DecisionTrace = {
   trace_version: "1",
@@ -80,6 +95,13 @@ describe("Jonas web API adapters", () => {
     expect(traceFromRecord({ ...record, status: "declined" }).decision).toBe("decline");
     expect(traceFromRecord({ ...record, status: "expired" }).decision).toBe("step_up");
     expect(traceFromRecord({ ...record, trace: null, status: "approved" }).decision).toBe("approve");
+  });
+
+  it("carries the backend's trust score into the screen trace, also without a trace", () => {
+    expect(traceFromRecord({ ...record, trust_score: trust }).trust).toEqual(trust);
+    expect(traceFromRecord(record).trust).toBeNull();
+    expect(traceFromRecord({ ...record, trace: null, trust_score: trust }).trust).toEqual(trust);
+    expect(pendingFromRecord({ ...record, trust_score: trust }).trace.trust?.score).toBe(60);
   });
 
   it("reads scenarios and the deadline margin from the nested status response", () => {

@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, USE_MOCK_API } from "./api";
+import { TrustBar, TrustBreakdown, TrustGauge } from "./TrustGauge";
 import visecaWordmark from "../../data/raw/2026-09-18_viseca-2026/assets/logos/viseca-dark.png";
-import { securityScore } from "./securityScore";
 import type {
   Decision,
   DecisionTrace,
@@ -379,6 +379,12 @@ function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; 
                   <strong>{money(trace.facts.amounts.billing_amount_chf)}</strong>
                 </div>
                 <div className="customer-question"><UserRoundCheck size={20} /><p>{trace.customer_message}</p></div>
+                {trace.trust && (
+                  <div className="trust-row">
+                    <TrustGauge trust={trace.trust} size={118} />
+                    <p>{trace.trust.summary}</p>
+                  </div>
+                )}
                 <div className="reason-strip">
                   <span>Why Relay paused it</span>
                   <strong>{trace.reason_codes.map(friendlyGuardName).join(", ") || "Manual review"}</strong>
@@ -412,15 +418,6 @@ function Evidence({ guard }: { guard: GuardResult }) {
 
 function DecisionRow({ trace }: { trace: DecisionTrace }) {
   const [open, setOpen] = useState(false);
-  const score = securityScore(trace.guards);
-  const coveragePercent = Math.round(score.coverage.ratio * 100);
-  const scoreTone = score.vetoedBy.length
-    ? "veto"
-    : score.score === null
-      ? "empty"
-      : score.score >= 80
-        ? "strong"
-        : score.score >= 50 ? "review" : "weak";
   return (
     <article className={`decision-row ${open ? "is-open" : ""}`}>
       <button className="decision-summary" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
@@ -429,6 +426,7 @@ function DecisionRow({ trace }: { trace: DecisionTrace }) {
         </span>
         <span className="decision-merchant"><strong>{trace.facts.merchant.merchant_name}</strong><small>{time(trace.decided_at)} · {trace.ids.source_authorization_id}</small></span>
         <strong className="decision-amount">{money(trace.facts.amounts.billing_amount_chf)}</strong>
+        <TrustBar trust={trace.trust ?? null} />
         <StatusPill verdict={trace.decision} label={decisionLabel[trace.decision]} />
         <span className="latency">{trace.margin_ms >= 1000 ? `${(trace.margin_ms / 1000).toFixed(1)}s margin` : `${Math.round(trace.margin_ms)}ms margin`}</span>
         <ChevronDown className="chevron" size={18} />
@@ -442,33 +440,8 @@ function DecisionRow({ trace }: { trace: DecisionTrace }) {
       </div>
       {open && (
         <div className="decision-detail">
-          <section className="security-score-card" aria-label="Security score">
-            <div className={`security-score-value score-${scoreTone}`}>
-              <ShieldCheck size={21} />
-              <strong>{score.score ?? "—"}</strong>
-              <span>/100</span>
-            </div>
-            <div className="security-score-body">
-              <div className="security-score-heading">
-                <div><strong>Security score</strong><small>Explanatory only — guard decisions remain authoritative.</small></div>
-                <span>Coverage {coveragePercent}%</span>
-              </div>
-              <div className="security-family-scores">
-                {score.families.map((family) => (
-                  <span key={family.family}><small>{family.family}</small><strong>{family.score ?? "—"}</strong></span>
-                ))}
-              </div>
-              <p className={coveragePercent < 100 ? "coverage-warning" : "coverage-complete"}>
-                {score.coverage.requiredChecks === 0
-                  ? "No applicable checks were evaluated."
-                  : `${score.coverage.evaluatedChecks} of ${score.coverage.requiredChecks} applicable checks evaluated${score.coverage.notBuiltChecks ? ` · ${score.coverage.notBuiltChecks} not built` : ""}${score.coverage.errorChecks ? ` · ${score.coverage.errorChecks} errors` : ""}.`}
-              </p>
-              {score.vetoedBy.length > 0 && (
-                <p className="security-veto"><TriangleAlert size={14} /> Veto: {score.vetoedBy.map(friendlyGuardName).join(", ")}</p>
-              )}
-            </div>
-          </section>
           <div className="decision-message"><strong>Decision explanation</strong><p>{trace.customer_message}</p></div>
+          {trace.trust && <TrustBreakdown trust={trace.trust} />}
           <div className="guard-table" role="table" aria-label={`Checks for ${trace.facts.merchant.merchant_name}`}>
             <div className="guard-head" role="row"><span>Check</span><span>Evidence</span><span>Result</span><span>Time</span></div>
             {trace.guards.map((guard) => (
@@ -503,7 +476,7 @@ function LogScreen({ decisions }: { decisions: DecisionTrace[] }) {
         <section className="panel"><EmptyState icon={LayoutList} title="No decisions yet" detail="Start a scenario to see each purchase evaluated here." /></section>
       ) : (
         <section className="decision-list">
-          <div className="decision-columns"><span>Purchase</span><span>Amount</span><span>Decision</span><span>Deadline</span></div>
+          <div className="decision-columns"><span>Purchase</span><span>Amount</span><span>Trust</span><span>Decision</span><span>Deadline</span></div>
           {decisions.map((trace) => <DecisionRow key={trace.ids.authorization_id} trace={trace} />)}
         </section>
       )}

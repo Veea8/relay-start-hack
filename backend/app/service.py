@@ -18,6 +18,7 @@ from app.policyc.compiler import build_policy_from_mandate
 from app.state.audit import AuditLog
 from app.state.ledger import build_ledger_snapshot_from_records, find_budget_objection, read_ledger_time
 from app.state.store import DecisionStore
+from app.trust.score import TRUST_SCORE_VERSION
 from app.webapi.policy_view import MandateContent, describe_policy
 from app.webapi.sse import EventBroadcaster
 from app.worker.loop import DecisionWorker
@@ -184,6 +185,8 @@ class RelayService:
             "llm_mode": model_mode,
             "llm_model": self.settings.llm_model or None,
             "llm_last_call": self.last_policy_model_call,
+            "trust_score_version": TRUST_SCORE_VERSION,
+            "trust_score_in_evidence": self.settings.trust_score_in_evidence,
             "leash_mode": self.settings.leash_mode if self.platform is None else "offline",
             "leash_base_url": self.client.base_url,
             "team_key_present": self.settings.team_api_key != "",

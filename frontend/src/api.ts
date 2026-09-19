@@ -120,6 +120,7 @@ function fallbackTrace(record: DecisionRecord): DecisionTrace {
     llm: { mode: "off", calls: [] },
     timings: { total_ms: record.total_ms },
     resolution: record.resolution,
+    trust: record.trust_score ?? null,
   };
 }
 
@@ -129,7 +130,9 @@ const outcomeOf = (record: DecisionRecord): Decision =>
 
 export function traceFromRecord(record: DecisionRecord) {
   const decision = outcomeOf(record);
-  return record.trace ? { ...record.trace, decision, resolution: record.resolution } : fallbackTrace({ ...record, decision });
+  return record.trace
+    ? { ...record.trace, decision, resolution: record.resolution, trust: record.trust_score ?? null }
+    : fallbackTrace({ ...record, decision });
 }
 
 export function pendingFromRecord(record: DecisionRecord): PendingAuthorization {

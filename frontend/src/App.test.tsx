@@ -10,6 +10,7 @@ describe("Relay interface", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "RainThread" })).toBeInTheDocument();
     expect(screen.getByText(/prototype data/i)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /trust score 60 of 100, needs your decision/i })).toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole("button", { name: /^policy$/i })[0]);
     expect(await screen.findByRole("heading", { name: /set the boundaries/i })).toBeInTheDocument();
@@ -29,6 +30,18 @@ describe("Relay interface", () => {
     await waitFor(() => expect(screen.getByText(/policy confirmed/i)).toBeInTheDocument());
   });
 
+  it("shows the trust calculation of an expanded log row", async () => {
+    render(<App />);
+    await userEvent.click((await screen.findAllByRole("button", { name: /decision log/i }))[0]);
+    expect(await screen.findByRole("img", { name: /trust score 30 of 100, blocked/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /giftly market/i }));
+    const breakdown = await screen.findByRole("region", { name: /how the trust score was calculated/i });
+    expect(breakdown).toHaveTextContent("Every purchase begins with full trust");
+    expect(breakdown).toHaveTextContent("−70");
+    expect(breakdown).toHaveTextContent("5 of 11 applicable checks evaluated");
+    expect(breakdown).toHaveTextContent("never replaces it");
+  });
+
   it("resolves a pending purchase only once", async () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: /approve once/i }));
@@ -45,15 +58,5 @@ describe("Relay interface", () => {
     expect(screen.getByText("active")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start offline run/i })).toBeInTheDocument();
     currentPolicy.mockRestore();
-  });
-
-  it("shows the security score with coverage and a decline veto", async () => {
-    render(<App />);
-    await userEvent.click((await screen.findAllByRole("button", { name: /decision log/i }))[0]);
-    await userEvent.click(await screen.findByRole("button", { name: /Giftly Market/i }));
-    const score = await screen.findByRole("region", { name: /security score/i });
-    expect(score).toHaveTextContent("80/100");
-    expect(score).toHaveTextContent("Coverage 100%");
-    expect(score).toHaveTextContent(/Veto: Over Per Order Limit/i);
   });
 });

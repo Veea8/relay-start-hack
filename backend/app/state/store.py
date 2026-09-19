@@ -52,7 +52,8 @@ TABLE_DEFINITIONS = (
         source TEXT NOT NULL,
         trace_json TEXT,
         problems_json TEXT,
-        resolution_json TEXT
+        resolution_json TEXT,
+        trust_score_json TEXT
     )
     """,
     """
@@ -108,7 +109,15 @@ DECISION_JSON_COLUMNS = {
     "trace_json": "trace",
     "problems_json": "problems",
     "resolution_json": "resolution",
+    "trust_score_json": "trust_score",
 }
+
+
+
+# Name the columns added after the first version of the decisions table, so an older store file gains them on opening
+DECISION_COLUMNS_ADDED_LATER = (
+    ("trust_score_json", "TEXT"),
+)
 
 
 
@@ -171,6 +180,7 @@ def decision_record_to_row(record):
         "trace_json": json.dumps(record["trace"]) if record.get("trace") is not None else None,
         "problems_json": json.dumps(record["problems"]) if record.get("problems") is not None else None,
         "resolution_json": json.dumps(record["resolution"]) if record.get("resolution") is not None else None,
+        "trust_score_json": json.dumps(record["trust_score"]) if record.get("trust_score") is not None else None,
     }
 
 
@@ -211,7 +221,17 @@ class DecisionStore:
             self.connection.execute("PRAGMA journal_mode = WAL")
         for table_definition in TABLE_DEFINITIONS:
             self.connection.execute(table_definition)
+        self.add_missing_decision_columns()
         self.connection.commit()
+
+
+
+    # Add every column of the decisions table that an older store file does not have yet, which keeps its rows readable
+    def add_missing_decision_columns(self):
+        existing_columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(decisions)").fetchall()}
+        for column_name, column_type in DECISION_COLUMNS_ADDED_LATER:
+            if column_name not in existing_columns:
+                self.connection.execute("ALTER TABLE decisions ADD COLUMN " + column_name + " " + column_type)
 
 
 

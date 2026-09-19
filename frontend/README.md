@@ -23,7 +23,7 @@ The frontend calls these routes through `src/api.ts`:
 - `POST /api/resolve/{authorization_id}`
 - `GET /api/stream` as a server-sent event stream
 
-The TypeScript wire types are in `src/types.ts`. The decisions and pending routes return backend decision records; the adapter exposes their nested `DecisionTrace` values to the screens and uses `human_deadline_at` for the approval countdown. The event stream uses named `status`, `decision`, `resolution`, `run`, `mandate` and `reset` events. The frontend handles the first three directly and reloads authoritative inbox/log data whenever the stream reconnects. Repeated records are upserted by live authorization ID.
+The TypeScript wire types are in `src/types.ts`. The decisions and pending routes return backend decision records; the adapter exposes their nested `DecisionTrace` values to the screens and uses `human_deadline_at` for the approval countdown. Each record also carries the backend's `trust_score`, which the adapter puts on the trace as `trust`. `src/TrustGauge.tsx` draws it as a tachometer on an inbox card, as a bar in a log row and as the line-by-line calculation in an expanded row. The frontend never computes the score; the method is in `docs/trust-score.md`. The event stream uses named `status`, `decision`, `resolution`, `run`, `mandate` and `reset` events. The frontend handles the first three directly and reloads authoritative inbox/log data whenever the stream reconnects. Repeated records are upserted by live authorization ID.
 
 The browser talks only to this REST/SSE boundary. It contains no Viseca team key, direct Viseca API calls, policy engine or purchase-decision logic.
 

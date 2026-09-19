@@ -7,6 +7,8 @@ import type {
   GuardVerdict,
   PendingAuthorization,
   PolicyDraft,
+  TrustDeduction,
+  TrustScore,
 } from "./types";
 
 const families: GuardFamily[] = [
@@ -35,7 +37,7 @@ const representativeGuards = (
           : `${family.toLowerCase().replaceAll(" ", "_")}_${index + 1}`,
         family,
         verdict: isDecisive ? verdict : index === 0 ? "PASS" : "SKIP",
-        reason_code: isDecisive ? reason : null,
+        reason_code: isDecisive ? reason : index === 0 ? null : "GUARD_NOT_BUILT",
         evidence: isDecisive
           ? [
               {
@@ -55,6 +57,39 @@ const representativeGuards = (
     });
   });
 
+const verdictStrictness: Record<GuardVerdict, number> = { DECLINE: 4, STEP_UP: 3, UNCERTAIN: 2, PASS: 1, SKIP: 0 };
+
+// A fixture of the backend's trust score, shaped like the record the web API returns. The backend computes real ones.
+const mockTrust = (guards: GuardResult[], decision: Decision, summary: string, deductions: TrustDeduction[]): TrustScore => {
+  const score = 100 - deductions.reduce((sum, deduction) => sum + deduction.points, 0);
+  const band = decision === "approve" ? "trusted" : decision === "step_up" ? "review" : "blocked";
+  return {
+    version: "1",
+    score,
+    band,
+    label: band === "trusted" ? "Trusted" : band === "review" ? "Needs your decision" : "Blocked",
+    summary,
+    scale: { start: 100, trusted_from: 70, review_from: 35 },
+    deductions,
+    families: families.map((family) => ({
+      family,
+      strictest_verdict: guards
+        .filter((guard) => guard.family === family)
+        .reduce<GuardVerdict>((strictest, guard) => (verdictStrictness[guard.verdict] > verdictStrictness[strictest] ? guard.verdict : strictest), "SKIP"),
+      points_lost: deductions.filter((deduction) => deduction.family === family).reduce((sum, deduction) => sum + deduction.points, 0),
+    })),
+    coverage: {
+      checks_total: guards.length,
+      checks_evaluated: guards.filter((guard) => guard.verdict !== "SKIP").length,
+      checks_not_applicable: 0,
+      checks_not_built: guards.filter((guard) => guard.verdict === "SKIP").length,
+      checks_failed: 0,
+      coverage_share: Number((guards.filter((guard) => guard.verdict !== "SKIP").length / guards.length).toFixed(3)),
+    },
+    basis: { decision, uncertainty_policy: "ask", engine_version: "relay-0.1.0", trace_version: "1", llm_mode: "off" },
+  };
+};
+
 function trace(
   authorizationId: string,
   sourceId: string,
@@ -68,8 +103,11 @@ function trace(
   reason: string | null,
   threshold: number,
   minuteOffset: number,
+  trustSummary: string,
+  trustDeductions: TrustDeduction[],
 ): DecisionTrace {
   const decidedAt = new Date(Date.now() - minuteOffset * 60_000);
+  const guards = representativeGuards(family, guardVerdict, reason, amount, threshold);
   return {
     trace_version: "1",
     engine_version: "relay-0.1.0",
@@ -99,7 +137,7 @@ function trace(
       familiarity: null,
       extracted_item_facts: null,
     },
-    guards: representativeGuards(family, guardVerdict, reason, amount, threshold),
+    guards,
     aggregation: {
       initial: "approve",
       final: decision,
@@ -109,6 +147,7 @@ function trace(
     llm: { mode: "off", calls: [] },
     timings: { total_ms: 1.176 },
     resolution: null,
+    trust: mockTrust(guards, decision, trustSummary, trustDeductions),
   };
 }
 
@@ -126,6 +165,20 @@ export const mockDecisions: DecisionTrace[] = [
     "OVER_PER_ORDER_LIMIT",
     250,
     2,
+    "Per order limit refused this purchase (over per order limit).",
+    [
+      {
+        kind: "leading_finding",
+        guard_id: "over_per_order_limit",
+        family: "Spending limits",
+        verdict: "DECLINE",
+        reason_code: "OVER_PER_ORDER_LIMIT",
+        signal_name: null,
+        points: 70,
+        capped: false,
+        detail: "Per order limit refused this purchase (over per order limit)",
+      },
+    ],
   ),
   trace(
     "LA-DEMO-0034",
@@ -140,6 +193,20 @@ export const mockDecisions: DecisionTrace[] = [
     "UNFAMILIAR_MERCHANT",
     120,
     5,
+    "Merchant familiarity could not be settled, and your policy asks in doubt (unfamiliar merchant).",
+    [
+      {
+        kind: "leading_finding",
+        guard_id: "unfamiliar_merchant",
+        family: "Seller",
+        verdict: "UNCERTAIN",
+        reason_code: "UNFAMILIAR_MERCHANT",
+        signal_name: null,
+        points: 40,
+        capped: false,
+        detail: "Merchant familiarity could not be settled, and your policy asks in doubt (unfamiliar merchant)",
+      },
+    ],
   ),
   trace(
     "LA-DEMO-0001",
@@ -154,6 +221,8 @@ export const mockDecisions: DecisionTrace[] = [
     null,
     20,
     9,
+    "All 5 evaluated checks passed.",
+    [],
   ),
 ];
 
