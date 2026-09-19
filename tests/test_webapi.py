@@ -80,6 +80,7 @@ def test_draft_confirm_run_and_resolve(api):
     assert [record["decision"] for record in decisions] == ["approve", "step_up"]
     pending = client.get("/api/pending").json()["pending"]
     assert len(pending) == 1 and pending[0]["reason_codes"] == ["SMALL_OVERSHOOT", "GOAL_ALREADY_FULFILLED"]
+    assert pending[0]["approval_warning"] is None
     assert client.get("/api/decisions/" + pending[0]["live_authorization_id"]).json()["trace"]["decision"] == "step_up"
     assert client.get("/api/decisions/LA_none").status_code == 404
 
@@ -88,6 +89,7 @@ def test_draft_confirm_run_and_resolve(api):
     # The customer approves, and the platform and the store agree
     resolved = client.post("/api/resolve/" + pending[0]["live_authorization_id"], json = {"decision": "approve"}).json()
     assert resolved["status"] == "approved"
+    assert resolved["resolution"]["budget_warning"] is None
     assert platform.authorizations[pending[0]["live_authorization_id"]].status == "approved"
     assert client.get("/api/pending").json()["pending"] == []
     refused = client.post("/api/resolve/" + pending[0]["live_authorization_id"], json = {"decision": "approve"})

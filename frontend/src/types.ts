@@ -112,6 +112,8 @@ export interface PendingAuthorization {
   created_at: string;
   expires_at: string;
   trace: DecisionTrace;
+  // Set by the backend when an approval given since the question was asked would now break the budget. The customer still decides.
+  approval_warning?: string | null;
 }
 
 export interface HardRule {
@@ -190,4 +192,5 @@ export interface DecisionRecord {
   problems: string[];
   resolution: Record<string, unknown> | null;
   trust_score?: TrustScore | null;
+  approval_warning?: string | null;
 }

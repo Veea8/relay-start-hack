@@ -1,13 +1,10 @@
 # Script: test_ledger_seams.py
-# Purpose: Check that the worker hands the engine the memory of its own run, that an approval is checked against the budget again, and that a second run starts with an empty period
+# Purpose: Check that the worker hands the engine the memory of its own run, that an approval is checked against the budget again and warns, and that a second run starts with an empty period
 # Author: Andrés Gallardo
 # Date: September 2026
 
 from datetime import datetime, timedelta, timezone
 
-import pytest
-
-from app.service import ServiceError
 from platform_helpers import (
     build_test_platform,
     build_test_service,
@@ -153,8 +150,9 @@ def test_worker_asks_about_a_repeated_order_and_not_after_a_declined_one(tmp_pat
 
 #### Step 3: Check the approval ####
 
-# Check that approving the third purchase succeeds, and that approving the fourth is then refused with 409 while its question stays open
-def test_second_approval_is_refused_once_the_first_used_the_room(tmp_path):
+# Check that approving the third purchase succeeds, and that approving the fourth then goes through as well, with the new total
+# shown on the open question before and kept with the answer, because the customer always decides and is never refused
+def test_second_approval_goes_through_with_a_warning_once_the_first_used_the_room(tmp_path):
     async def scenario():
         platform = build_test_platform({SCENARIO_NAME: build_timed_scenario(RUN_AMOUNTS)})
         service = build_test_service(platform, tmp_path)
@@ -165,36 +163,43 @@ def test_second_approval_is_refused_once_the_first_used_the_room(tmp_path):
 
 
 
+        # Expect no warning on either open question while nothing was approved since they were asked
+        assert [record["approval_warning"] for record in service.list_pending()] == [None, None]
+
+
+
         # Approve the stated overshoot of the third purchase, which the customer was told about
         resolved_record = await service.resolve(third_identifier, "approve")
         assert resolved_record["status"] == "approved"
+        assert resolved_record["resolution"]["budget_warning"] is None
         assert platform.authorizations[third_identifier].status == "approved"
 
 
 
-        # Expect the refusal of the fourth, with the new total in the sentence, and nothing sent to the platform
-        with pytest.raises(ServiceError) as refusal:
-            await service.resolve(fourth_identifier, "approve")
-        assert refusal.value.status_code == 409
-        assert "CHF 67.00" in refusal.value.message
-        assert "CHF 50.00" in refusal.value.message
-        assert service.store.get_decision(fourth_identifier)["status"] == "pending"
-        assert service.store.get_resolution(fourth_identifier) is None
-        assert platform.authorizations[fourth_identifier].status == "pending"
+        # Expect the open fourth question to warn about the total of both now
+        [fourth_pending] = service.list_pending()
+        assert fourth_pending["live_authorization_id"] == fourth_identifier
+        assert "CHF 67.00" in fourth_pending["approval_warning"]
+        assert "CHF 50.00" in fourth_pending["approval_warning"]
+        assert "Nothing was approved" not in fourth_pending["approval_warning"]
 
 
 
-        # Expect that the customer can still decline the fourth
-        declined_record = await service.resolve(fourth_identifier, "decline")
-        assert declined_record["status"] == "declined"
+        # Expect the approval of the fourth to go through, sent to the platform, with the warning kept with the answer
+        approved_record = await service.resolve(fourth_identifier, "approve")
+        assert approved_record["status"] == "approved"
+        assert "CHF 67.00" in approved_record["resolution"]["budget_warning"]
+        assert service.store.get_resolution(fourth_identifier)["decision"] == "approve"
+        assert platform.authorizations[fourth_identifier].status == "approved"
+        assert service.list_pending() == []
         await service.client.close()
     run_async(scenario())
 
 
 
-# Check the reverse order, where the later question is approved first and the earlier one is then refused,
-# because the two share a period although the later purchase lies after the earlier one in simulated time
-def test_earlier_approval_is_refused_once_the_later_one_used_the_room(tmp_path):
+# Check the reverse order, where the later question is approved first and the earlier one then carries the warning,
+# because the two share a period although the later purchase lies after the earlier one in simulated time. A decline carries no warning.
+def test_earlier_question_carries_the_warning_once_the_later_one_used_the_room(tmp_path):
     async def scenario():
         platform = build_test_platform({SCENARIO_NAME: build_timed_scenario(RUN_AMOUNTS)})
         service = build_test_service(platform, tmp_path)
@@ -208,16 +213,18 @@ def test_earlier_approval_is_refused_once_the_later_one_used_the_room(tmp_path):
         # Approve the fourth purchase first, whose stated total of CHF 52.00 still holds
         resolved_record = await service.resolve(fourth_identifier, "approve")
         assert resolved_record["status"] == "approved"
+        assert resolved_record["resolution"]["budget_warning"] is None
 
 
 
-        # Expect the refusal of the third, with the total of both in the sentence, and nothing sent to the platform
-        with pytest.raises(ServiceError) as refusal:
-            await service.resolve(third_identifier, "approve")
-        assert refusal.value.status_code == 409
-        assert "CHF 67.00" in refusal.value.message
-        assert service.store.get_decision(third_identifier)["status"] == "pending"
-        assert platform.authorizations[third_identifier].status == "pending"
+        # Expect the open third question to warn about the total of both, and its decline to go through without a warning
+        [third_pending] = service.list_pending()
+        assert third_pending["live_authorization_id"] == third_identifier
+        assert "CHF 67.00" in third_pending["approval_warning"]
+        declined_record = await service.resolve(third_identifier, "decline")
+        assert declined_record["status"] == "declined"
+        assert declined_record["resolution"]["budget_warning"] is None
+        assert platform.authorizations[third_identifier].status == "declined"
         await service.client.close()
     run_async(scenario())
 

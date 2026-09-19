@@ -144,6 +144,7 @@ export function pendingFromRecord(record: DecisionRecord): PendingAuthorization 
     created_at: record.received_at,
     expires_at: record.human_deadline_at ?? record.deadline_at,
     trace: traceFromRecord(record),
+    approval_warning: record.approval_warning ?? null,
   };
 }
 
@@ -259,12 +260,15 @@ export const api = {
     });
   },
 
-  async resolve(authorizationId: string, decision: "approve" | "decline"): Promise<void> {
-    if (USE_MOCK_API) return wait();
-    await request(`/api/resolve/${authorizationId}`, {
+  // The answer always goes through. The backend hands back the record, whose resolution may carry a budget warning to show the customer.
+  async resolve(authorizationId: string, decision: "approve" | "decline"): Promise<string | null> {
+    if (USE_MOCK_API) { await wait(); return null; }
+    const record = await request<DecisionRecord>(`/api/resolve/${authorizationId}`, {
       method: "POST",
       body: JSON.stringify({ decision, customer_message: null }),
     });
+    const warning = record.resolution?.budget_warning;
+    return typeof warning === "string" && warning !== "" ? warning : null;
   },
 };
 

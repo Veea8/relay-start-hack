@@ -151,6 +151,9 @@ select { height: 42px; max-width: 270px; border: 1px solid #cbd6e4; background: 
 .reason-strip { display: flex; justify-content: space-between; gap: 15px; padding: 11px 0; border-top: 1px solid #ebeff4; border-bottom: 1px solid #ebeff4; font-size: .72rem; }
 .reason-strip span { color: var(--muted); }
 .reason-strip strong { color: #43536c; text-align: right; }
+.approval-warning { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; background: var(--amber-bg); border: 1px solid #f0d7a5; border-radius: 10px; color: var(--amber); font-size: .8rem; line-height: 1.45; }
+.approval-warning svg { flex: 0 0 auto; margin-top: 1px; }
+.approval-warning p { margin: 0; }
 .pending-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 17px; }
 .button-decline { background: white; border-color: #e2b8b8; color: var(--red); }
 .button-approve { background: var(--green); color: white; }

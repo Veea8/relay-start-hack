@@ -334,7 +334,7 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
   return <span className={`countdown ${seconds < 30 ? "urgent" : ""}`} aria-label={seconds ? `${seconds} seconds left to answer` : "Answer window expired"}><Clock3 size={18} /><small>{seconds ? "Answer within" : "Answer window"}</small><strong>{seconds ? `${minutes}:${remainder}` : "Expired"}</strong></span>;
 }
 
-function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; onResolve: (id: string, decision: "approve" | "decline") => Promise<void> }) {
+function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; onResolve: (id: string, decision: "approve" | "decline") => Promise<string | null> }) {
   const [resolving, setResolving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
@@ -344,8 +344,8 @@ function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; 
     setError(null);
     setConfirmation(null);
     try {
-      await onResolve(id, decision);
-      setConfirmation(`Purchase ${decision === "approve" ? "approved once" : "declined"}. The audit log has been updated.`);
+      const warning = await onResolve(id, decision);
+      setConfirmation(`Purchase ${decision === "approve" ? "approved once" : "declined"}. The audit log has been updated.${warning ? ` Note: ${warning}` : ""}`);
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send your answer."); }
     finally { setResolving(null); }
@@ -389,6 +389,12 @@ function InboxScreen({ pending, onResolve }: { pending: PendingAuthorization[]; 
                   <span>Why Relay paused it</span>
                   <strong>{trace.reason_codes.map(friendlyGuardName).join(", ") || "Manual review"}</strong>
                 </div>
+                {item.approval_warning && (
+                  <div className="approval-warning" role="status">
+                    <TriangleAlert size={17} />
+                    <p>{item.approval_warning} You can still approve it. The decision is yours.</p>
+                  </div>
+                )}
                 <div className="pending-actions">
                   <button className="button button-decline" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "decline")}><X size={17} /> {resolving === item.authorization_id ? "Sending…" : "Decline"}</button>
                   <button className="button button-approve" disabled={expired || resolving !== null} onClick={() => resolve(item.authorization_id, "approve")}><Check size={17} /> {resolving === item.authorization_id ? "Sending…" : "Approve once"}</button>
@@ -500,6 +506,8 @@ export default function App() {
     if (event.type === "resolution") {
       setPending((items) => items.filter((item) => item.authorization_id !== event.data.ids.authorization_id));
       setDecisions((items) => [event.data, ...items.filter((item) => item.ids.authorization_id !== event.data.ids.authorization_id)]);
+      // An answer changes the budget room of the other open questions, so their warnings are read again from the backend.
+      if (!USE_MOCK_API) void api.pending().then(setPending).catch(() => undefined);
     }
     if (event.type === "status") setStatus(event.data);
   }, []);
@@ -536,9 +544,11 @@ export default function App() {
   useEffect(() => { void load(); }, [load]);
 
   async function resolveAuthorization(id: string, decision: "approve" | "decline") {
-    await api.resolve(id, decision);
+    const warning = await api.resolve(id, decision);
     setPending((items) => items.filter((item) => item.authorization_id !== id));
     setDecisions((items) => items.map((trace) => trace.ids.authorization_id === id ? { ...trace, decision, resolution: { decision, resolved_at: new Date().toISOString() } } : trace));
+    if (!USE_MOCK_API) void api.pending().then(setPending).catch(() => undefined);
+    return warning;
   }
 
   const navigate = (destination: Screen) => { setScreen(destination); setMobileNav(false); };

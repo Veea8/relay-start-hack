@@ -415,6 +415,7 @@ class RelayService:
 
     # Check the budget again before an approval is sent, against the run as it stands now, and return the objection as a sentence or None.
     # A question without a stored decision record, such as one about a message that could not be read, has no budget to check.
+    # The sentence is a warning and never a refusal, because the customer always decides. The inbox shows it on the card, and an approval keeps it.
     def check_budget_before_approval(self, record):
         purchase_time = read_ledger_time(record.get("sim_timestamp"))
         if record.get("trace") is None or purchase_time is None:
@@ -429,7 +430,21 @@ class RelayService:
             keep_later_rows = True,
             own_cart_lines = read_record_cart_lines(record),
         )
-        return find_budget_objection(record.get("trace"), snapshot)
+        objection = find_budget_objection(record.get("trace"), snapshot)
+        if objection is None:
+            return None
+
+
+
+        # The sentence was written for a refusal, so the words that said nothing went through are left out of the warning
+        return objection.removesuffix(" Nothing was approved.")
+
+
+
+    # List the questions that wait for the customer, oldest first, each with the warning an approval would carry right now
+    def list_pending(self):
+        self.worker.expire_old_questions()
+        return [{**record, "approval_warning": self.check_budget_before_approval(record)} for record in self.store.list_pending()]
 
 
 
@@ -447,11 +462,9 @@ class RelayService:
 
 
 
-        # Check the budget again before an approval, because two open questions can each fit and together break a limit
-        if decision == "approve":
-            objection = self.check_budget_before_approval(record)
-            if objection is not None:
-                raise ServiceError(409, objection)
+        # Check the budget again before an approval, because two open questions can each fit and together break a limit.
+        # The answer goes through either way, because the customer always decides, and the warning travels with it.
+        budget_warning = self.check_budget_before_approval(record) if decision == "approve" else None
 
 
 
@@ -472,6 +485,7 @@ class RelayService:
             "resolved_at": format_moment(resolved_at),
             "posted": True,
             "post_status_code": 200,
+            "budget_warning": budget_warning,
             "response": response,
         }
         self.store.save_resolution(live_authorization_id, resolution)

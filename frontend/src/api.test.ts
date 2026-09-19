@@ -87,6 +87,12 @@ describe("Jonas web API adapters", () => {
     expect(invalid.reason_codes).toEqual(["INVALID_EVENT"]);
   });
 
+  it("carries the budget warning of an open question to its card", () => {
+    const warning = "Since this question was asked you approved another order. This one would now bring your spending over 7 days to CHF 389.00, above your budget of CHF 300.00.";
+    expect(pendingFromRecord({ ...record, approval_warning: warning }).approval_warning).toBe(warning);
+    expect(pendingFromRecord(record).approval_warning).toBeNull();
+  });
+
   it("shows the customer's answer as the outcome once a question is resolved", () => {
     const answered = traceFromRecord({ ...record, status: "approved", resolution: { decision: "approve", resolved_at: "2026-09-19T07:01:30Z" } });
     expect(answered.decision).toBe("approve");

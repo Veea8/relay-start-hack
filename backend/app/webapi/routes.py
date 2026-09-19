@@ -197,12 +197,10 @@ async def read_decision(live_authorization_id: str, request: Request):
 
 
 
-# List the questions that wait for the customer
+# List the questions that wait for the customer, each with a warning when an approval given meanwhile would now break the budget
 @router.get("/pending")
 async def list_pending(request: Request):
-    service = service_of(request)
-    service.worker.expire_old_questions()
-    return {"pending": service.store.list_pending()}
+    return {"pending": service_of(request).list_pending()}
 
 
 
