@@ -5,8 +5,9 @@
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal
-from typing import Tuple
+from typing import Optional, Tuple
 
+from app.engine.injection_text import find_agent_directed_text
 from app.engine.shop_text import LineTextFacts, read_line_text_facts
 from app.policyc.instruction_text import read_words
 
@@ -70,8 +71,23 @@ class MerchantFact:
 
 
 
+# Hold one sentence of the shop that is aimed at a shopping agent and not at a buyer.
+# field_name says in plain words which of the four texts of the shop held it, which is the shop name, the item name, the item sentence or the purchase description,
+# and source names the same field of the message. line_no is the number of the cart line, and None for a text that belongs to the whole purchase.
+# family names the kind of pattern that matched, and sentence is the matching sentence, cleaned and shortened so it is safe to show.
+@dataclass(frozen = True)
+class AgentDirectedTextFact:
+    field_name: str
+    source: str
+    line_no: Optional[int]
+    family: str
+    sentence: str
+
+
+
 # Hold the amounts of one purchase as exact decimals, together with the currency of the purchase, the lines of the cart and the shop.
 # billing_amount_chf is the amount in Swiss francs, while amount, items_subtotal and delivery_fee are in the purchase currency.
+# agent_directed_text lists every sentence in a text of the shop that is aimed at a shopping agent, and is empty for ordinary shop text.
 @dataclass(frozen = True)
 class FactSheet:
     billing_amount_chf: Decimal
@@ -81,6 +97,7 @@ class FactSheet:
     currency: str
     lines: Tuple[LineFact, ...]
     merchant: MerchantFact
+    agent_directed_text: Tuple[AgentDirectedTextFact, ...] = ()
 
 
 
@@ -134,7 +151,46 @@ def build_merchant_fact(merchant):
 
 
 
-# Read the amounts, the cart lines and the shop of the purchase and nothing else, so the fact sheet depends on no clock and on no identifier
+# Name the four texts a shop controls, each in plain words and as the field of the message
+SHOP_NAME_FIELD = ("shop name", "authorization.merchant.merchant_name")
+ITEM_NAME_FIELD = ("item name", "authorization.items.item_name")
+ITEM_SENTENCE_FIELD = ("item sentence", "authorization.items.item_details")
+PURCHASE_DESCRIPTION_FIELD = ("purchase description", "authorization.purchase_description")
+
+
+
+# Read one text of the shop and keep every sentence aimed at a shopping agent, together with the field and the cart line it came from
+def read_agent_directed_text(text_field, text, line_no = None):
+    field_name, source = text_field
+    return tuple(
+        AgentDirectedTextFact(
+            field_name = field_name,
+            source = source,
+            line_no = line_no,
+            family = finding.family,
+            sentence = finding.sentence,
+        )
+        for finding in find_agent_directed_text(text)
+    )
+
+
+
+# Read all four texts of the shop, which are the shop name, the name and the sentence of every cart line, and the purchase description.
+# No text is skipped, because a shop can place such a sentence in any of them.
+def collect_agent_directed_text(event):
+    facts_of_the_shop_name = read_agent_directed_text(SHOP_NAME_FIELD, event.authorization.merchant.merchant_name)
+    facts_of_the_cart_lines = tuple(
+        agent_directed_text_fact
+        for cart_item in event.authorization.items
+        for text_field, text in ((ITEM_NAME_FIELD, cart_item.item_name), (ITEM_SENTENCE_FIELD, cart_item.item_details))
+        for agent_directed_text_fact in read_agent_directed_text(text_field, text, line_no = cart_item.line_no)
+    )
+    facts_of_the_purchase_description = read_agent_directed_text(PURCHASE_DESCRIPTION_FIELD, event.authorization.purchase_description)
+    return facts_of_the_shop_name + facts_of_the_cart_lines + facts_of_the_purchase_description
+
+
+
+# Read the amounts, the cart lines, the shop and the four texts of the shop and nothing else, so the fact sheet depends on no clock and on no identifier
 def build_fact_sheet(event):
     return FactSheet(
         billing_amount_chf = to_money(event.authorization.billing_amount_chf),
@@ -144,4 +200,5 @@ def build_fact_sheet(event):
         currency = event.authorization.currency,
         lines = tuple(build_line_fact(cart_item) for cart_item in event.authorization.items),
         merchant = build_merchant_fact(event.authorization.merchant),
+        agent_directed_text = collect_agent_directed_text(event),
     )

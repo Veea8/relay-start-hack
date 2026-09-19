@@ -9,6 +9,7 @@ from functools import lru_cache
 from app.engine.guards.base import PlaceholderGuard
 from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
+from app.engine.guards.g_injection import InjectionGuard
 from app.engine.guards.g_item_match import ItemMatchGuard
 from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
 from app.engine.guards.g_lookalike_merchant import LookalikeMerchantGuard
@@ -92,6 +93,7 @@ BUILT_GUARD_CLASSES_BY_ID = {
     "lookalike_merchant": LookalikeMerchantGuard,
     "merchant_familiarity": MerchantFamiliarityGuard,
     "item_shop_consistency": ItemShopConsistencyGuard,
+    "injection": InjectionGuard,
 }
 
 

@@ -108,6 +108,12 @@ class Expectations(FrozenPolicyModel):
 
 
 
+    # Keep what happens when a text of the shop is aimed at the shopping agent, which is a question to the customer or a refusal.
+    # No value approves, because such a text can never loosen a decision.
+    injection_action: Literal["step_up", "decline"] = "step_up"
+
+
+
 
 
 

@@ -95,6 +95,7 @@ def build_policy_from_mandate(mandate, overshoot_tolerance_share = None, item_ca
             merchant_familiarity = familiarity_reading.merchant_familiarity,
             familiarity_bar = familiarity_reading.familiarity_bar,
             familiarity_regular_min_purchases = get_settings().familiarity_regular_min_purchases,
+            injection_action = get_settings().injection_action,
         ),
         open_questions = (
             order_limit_reading.open_questions
