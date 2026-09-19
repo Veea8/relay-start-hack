@@ -46,4 +46,14 @@ describe("Relay interface", () => {
     expect(screen.getByRole("button", { name: /start offline run/i })).toBeInTheDocument();
     currentPolicy.mockRestore();
   });
+
+  it("shows the security score with coverage and a decline veto", async () => {
+    render(<App />);
+    await userEvent.click((await screen.findAllByRole("button", { name: /decision log/i }))[0]);
+    await userEvent.click(await screen.findByRole("button", { name: /Giftly Market/i }));
+    const score = await screen.findByRole("region", { name: /security score/i });
+    expect(score).toHaveTextContent("80/100");
+    expect(score).toHaveTextContent("Coverage 100%");
+    expect(score).toHaveTextContent(/Veto: Over Per Order Limit/i);
+  });
 });
