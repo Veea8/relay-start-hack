@@ -251,10 +251,11 @@ class TraceFacts(FrozenDecisionModel):
 
 
 
-# Keep the use of the language model, which is switched off for now and therefore has no calls
+# Keep the use of the language model. The mode is off when no model took part in the decision, live when its call succeeded,
+# and degraded when the call failed in any way, so the decision rests on the fixed patterns alone.
 class TraceLanguageModel(FrozenDecisionModel):
 
-    mode: Literal["off"] = "off"
+    mode: Literal["off", "live", "degraded"] = "off"
     calls: list[dict[str, Any]] = Field(default_factory = list)
 
 

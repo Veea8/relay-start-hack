@@ -22,13 +22,16 @@ from app.models.policy import InternalPolicy
 #### Step 1: Define the input of a decision ####
 
 # Hold everything a guard may look at, where facts carries the amounts as exact decimals
-# and state is an opaque value that nothing reads yet
+# and state is an opaque value that nothing reads yet.
+# extracted_facts holds the facts a language model read from the sentences of the shop, or None when no model ran.
+# It is an optional extra, and a guard that reads it may only become stricter through it.
 @dataclass(frozen = True)
 class DecisionInput:
     event: AuthorizationEvent
     policy: InternalPolicy
     facts: FactSheet
     state: Any = None
+    extracted_facts: Any = None
 
 
 

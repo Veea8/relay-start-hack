@@ -327,7 +327,7 @@ def test_monitor_with_a_plan_declines_end_to_end(example_message):
     decision_trace = decide(event, policy, build_empty_ledger_snapshot(event))
     assert event.authorization.merchant.recurring_capable == "false"
     assert policy.expectations.allowed_item_categories == ("electronics",)
-    assert policy.expectations.requested_item == RequestedItem(kind_keywords = (), max_quantity = 1, goal_quantity = 1)
+    assert policy.expectations.requested_item == RequestedItem(kind_keywords = ("monitor",), max_quantity = 1, goal_quantity = 1)
     assert policy.expectations.no_addons is True
     assert policy.expectations.per_order_limit_chf == Decimal("400")
     assert decision_trace.decision == Decision.DECLINE

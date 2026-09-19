@@ -9,6 +9,7 @@ from decimal import Decimal
 import pytest
 
 from app.engine.facts import FactSheet, LineFact, MerchantFact, build_fact_sheet, read_true_or_false, to_money
+from app.engine.shop_text import LineTextFacts
 from app.models.events import read_purchase_message
 
 
@@ -89,9 +90,13 @@ def test_line_of_the_example_message(example_message):
             unit_price = Decimal("18.00"),
             currency = "CHF",
             line_total = Decimal("18.00"),
+            text_facts = LineTextFacts(size = None, return_days = None, final_sale = False, return_policy_not_stated = False),
+            name_words = ("example", "grocery", "item"),
         ),
     )
-    assert [line_field.name for line_field in dataclasses.fields(LineFact)] == ["line_no", "item_name", "item_category", "quantity", "unit_price", "currency", "line_total"]
+    assert [line_field.name for line_field in dataclasses.fields(LineFact)] == [
+        "line_no", "item_name", "item_category", "quantity", "unit_price", "currency", "line_total", "text_facts", "name_words",
+    ]
 
 
 

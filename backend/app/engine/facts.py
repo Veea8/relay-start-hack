@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal
 from typing import Tuple
 
+from app.engine.shop_text import LineTextFacts, read_line_text_facts
+from app.policyc.instruction_text import read_words
+
 
 
 
@@ -38,7 +41,9 @@ def to_money(value):
 #### Step 2: Define the fact sheet ####
 
 # Hold one line of the cart, where unit_price and line_total are in the currency of the line and line_total is unit_price times quantity.
-# The name is written by the shop and is kept for display only. No identifier is kept, so no guard can decide on one.
+# The name is written by the shop. name_words holds its words in lower case and in singular form, which is the only form a guard compares.
+# text_facts holds what the sentence of the shop about this line says, as typed facts, and the sentence itself is not kept.
+# No identifier is kept, so no guard can decide on one.
 @dataclass(frozen = True)
 class LineFact:
     line_no: int
@@ -48,6 +53,8 @@ class LineFact:
     unit_price: Decimal
     currency: str
     line_total: Decimal
+    text_facts: LineTextFacts
+    name_words: Tuple[str, ...]
 
 
 
@@ -85,7 +92,7 @@ class FactSheet:
 
 #### Step 3: Build the fact sheet of one purchase ####
 
-# Read one line of the cart, and multiply the exact unit price by the quantity
+# Read one line of the cart, multiply the exact unit price by the quantity, and read the sentence of the shop into typed facts
 def build_line_fact(cart_item):
     unit_price = to_money(cart_item.unit_price)
     return LineFact(
@@ -96,6 +103,8 @@ def build_line_fact(cart_item):
         unit_price = unit_price,
         currency = cart_item.currency,
         line_total = to_money(unit_price * cart_item.quantity),
+        text_facts = read_line_text_facts(cart_item.item_details),
+        name_words = read_words(cart_item.item_name),
     )
 
 

@@ -146,11 +146,11 @@ def read_mandate(example_message, instruction):
 
 
 
-# Check that an instruction for one thing gives a requested item with one unit, and that the words that forbid extras reach the policy
+# Check that an instruction for one thing gives a requested item with one unit and the word that names the thing, and that the words that forbid extras reach the policy
 def test_compiler_fills_the_requested_item_and_no_addons(example_message):
     mandate = read_mandate(example_message, "Buy the 27-inch monitor I chose for CHF 400 or less. Do not add anything I did not ask for.")
     expectations = build_policy_from_mandate(mandate).expectations
-    assert expectations.requested_item == RequestedItem(kind_keywords = (), max_quantity = 1, goal_quantity = 1)
+    assert expectations.requested_item == RequestedItem(kind_keywords = ("monitor",), max_quantity = 1, goal_quantity = 1)
     assert expectations.no_addons is True
 
 

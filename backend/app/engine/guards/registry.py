@@ -9,8 +9,10 @@ from functools import lru_cache
 from app.engine.guards.base import PlaceholderGuard
 from app.engine.guards.g_addon import AddonGuard
 from app.engine.guards.g_category_scope import CategoryScopeGuard
+from app.engine.guards.g_item_match import ItemMatchGuard
 from app.engine.guards.g_item_shop_consistency import ItemShopConsistencyGuard
 from app.engine.guards.g_merchant_type import MerchantTypeGuard
+from app.engine.guards.g_order_terms import OrderTermsGuard
 from app.engine.guards.g_per_order_limit import PerOrderLimitGuard
 from app.engine.guards.g_period_budget import PeriodBudgetGuard
 from app.engine.guards.g_split_order import SplitOrderGuard
@@ -83,6 +85,8 @@ BUILT_GUARD_CLASSES_BY_ID = {
     "category_scope": CategoryScopeGuard,
     "addon": AddonGuard,
     "merchant_type": MerchantTypeGuard,
+    "item_match": ItemMatchGuard,
+    "order_terms": OrderTermsGuard,
     "item_shop_consistency": ItemShopConsistencyGuard,
 }
 

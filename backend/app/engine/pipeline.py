@@ -8,9 +8,11 @@ from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 
 from app.engine.aggregate import aggregate
+from app.engine.display import clean_shop_text
 from app.engine.facts import build_fact_sheet
 from app.engine.guards.base import DecisionInput
 from app.engine.guards.registry import get_default_guard_pipeline
+from app.llm.schemas import ModelExtraction
 from app.models.decision import (
     DecisionTrace,
     EvidenceItem,
@@ -74,8 +76,64 @@ def collect_trace_identifiers(event):
 
 
 
-# Copy the amounts and the shop of the purchase into the record
-def collect_trace_facts(event):
+# Accept the facts of a language model only as the one type the model module hands out, and treat anything else as no facts at all
+def read_model_extraction(extracted_facts):
+    return extracted_facts if isinstance(extracted_facts, ModelExtraction) else None
+
+
+
+# Clean a text a language model wrote, which may repeat words of a shop, and keep a missing text missing
+def clean_model_text(model_text):
+    return None if model_text is None else clean_shop_text(model_text)
+
+
+
+# Clean the two free texts of one line of model facts, which are the kind of product and the size
+def clean_extracted_line(line_as_dictionary):
+    return {
+        **line_as_dictionary,
+        "product_kind": clean_model_text(line_as_dictionary["product_kind"]),
+        "size": clean_model_text(line_as_dictionary["size"]),
+    }
+
+
+
+# Copy the facts a language model read into the record as plain values, which is None without a model and for a model call that gave no facts.
+# Every free text goes through the shared cleaning of shop text first, so no raw word of a shop reaches the record.
+# The guards never read this copy. They read the facts of the model themselves.
+def collect_extracted_item_facts(model_extraction):
+    if model_extraction is None or model_extraction.facts is None:
+        return None
+    facts_as_dictionary = model_extraction.facts.model_dump(mode = "json")
+    return {
+        **facts_as_dictionary,
+        "lines": [clean_extracted_line(line_as_dictionary) for line_as_dictionary in facts_as_dictionary["lines"]],
+        "injection_quotes": [clean_shop_text(injection_quote) for injection_quote in facts_as_dictionary["injection_quotes"]],
+    }
+
+
+
+# Say how the language model took part in the decision, which is off without a model, live after a call that succeeded and degraded after any other call
+def read_language_model_mode(model_extraction):
+    if model_extraction is None:
+        return "off"
+    return "live" if model_extraction.call.status == "success" else "degraded"
+
+
+
+# Copy the mode and the record of the model call into the record, where the list of calls stays empty without a model
+def collect_trace_language_model(model_extraction):
+    if model_extraction is None:
+        return TraceLanguageModel()
+    return TraceLanguageModel(
+        mode = read_language_model_mode(model_extraction),
+        calls = [model_extraction.call.model_dump(mode = "json")],
+    )
+
+
+
+# Copy the amounts and the shop of the purchase and the facts of the language model into the record
+def collect_trace_facts(event, model_extraction = None):
     return TraceFacts(
         amounts = TraceAmounts(
             amount = event.authorization.amount,
@@ -88,6 +146,7 @@ def collect_trace_facts(event):
             merchant_category = event.authorization.merchant.merchant_category,
             merchant_country = event.authorization.merchant.merchant_country,
         ),
+        extracted_item_facts = collect_extracted_item_facts(model_extraction),
     )
 
 
@@ -153,7 +212,8 @@ def run_one_guard(guard, decision_input, earlier_results):
 
 # Decide one purchase and return the complete record, where every guard appears whatever happened.
 # The clock is read for the received and decided moments, the margin and the timings only, and no guard sees it.
-def decide(event, policy, state, guards = None, read_clock = None):
+# extracted_facts may carry what a language model read from the sentences of the shop. It is optional, and the decision never waits for it.
+def decide(event, policy, state, guards = None, read_clock = None, extracted_facts = None):
 
     # Fall back to the full pipeline, which is built once per process, and to the real clock
     if guards is None:
@@ -174,7 +234,8 @@ def decide(event, policy, state, guards = None, read_clock = None):
     # Build the fact sheet once and hand it to every guard, so all guards compare the same exact decimals.
     # A message whose facts cannot be built raises here, and the exception leaves this function unchanged.
     fact_sheet = build_fact_sheet(event)
-    decision_input = DecisionInput(event = event, policy = policy, facts = fact_sheet, state = state)
+    model_extraction = read_model_extraction(extracted_facts)
+    decision_input = DecisionInput(event = event, policy = policy, facts = fact_sheet, state = state, extracted_facts = model_extraction)
 
 
 
@@ -205,9 +266,9 @@ def decide(event, policy, state, guards = None, read_clock = None):
         reason_codes = aggregation_outcome.reason_codes,
         customer_message = aggregation_outcome.customer_message,
         notes = aggregation_outcome.notes,
-        facts = collect_trace_facts(event),
+        facts = collect_trace_facts(event, model_extraction),
         guards = guard_results,
         aggregation = aggregation_outcome.aggregation_record,
-        llm = TraceLanguageModel(),
+        llm = collect_trace_language_model(model_extraction),
         timings = TraceTimings(total_ms = measure_elapsed_ms(decision_started_at)),
     )
