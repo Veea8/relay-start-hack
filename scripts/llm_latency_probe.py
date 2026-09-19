@@ -26,7 +26,13 @@ async def run_probe(calls):
     if settings.llm_base_url == "" or settings.llm_model == "":
         raise RuntimeError("Set LLM_BASE_URL and LLM_MODEL before running the latency probe")
     event = read_purchase_message(FIXTURE.read_text(encoding = "utf-8"))
-    transport = OpenAICompatibleTransport(settings.llm_base_url, settings.llm_model)
+    provider = "swisscom-apertus" if "swisscom" in settings.llm_base_url.casefold() else "openai-compatible"
+    transport = OpenAICompatibleTransport(
+        settings.llm_base_url,
+        settings.llm_model,
+        provider = provider,
+        initial_api_key = settings.llm_api_key,
+    )
     latencies = []
     statuses = []
     for _ in range(calls):
