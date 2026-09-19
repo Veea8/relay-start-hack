@@ -42,6 +42,19 @@ def build_extraction_prompt(event, required_attributes = ()):
     return "<merchant-data>\n" + json.dumps(payload, ensure_ascii = False, separators = (",", ":")) + "\n</merchant-data>"
 
 
+def normalize_empty_injection_fields(raw_output):
+    """Accept only Apertus's empty-value variants; never coerce a non-empty security signal."""
+    parsed = json.loads(raw_output)
+    if not isinstance(parsed, dict):
+        return parsed
+    normalized = dict(parsed)
+    if normalized.get("injection_quotes") == "":
+        normalized["injection_quotes"] = []
+    if normalized.get("injection_suspected") is None and normalized.get("injection_quotes") == []:
+        normalized["injection_suspected"] = False
+    return normalized
+
+
 class FactExtractor:
     def __init__(self, transport, breaker = None, timeout_seconds = 2.0, max_tokens = 300, clock = None):
         if timeout_seconds <= 0 or max_tokens <= 0:
@@ -84,7 +97,8 @@ class FactExtractor:
             return ModelExtraction(facts = None, call = self._record("provider_error", started_at, type(error).__name__))
 
         try:
-            facts = ExtractedFacts.model_validate_json(raw_output)
+            normalized_output = json.dumps(normalize_empty_injection_fields(raw_output), ensure_ascii = False)
+            facts = ExtractedFacts.model_validate_json(normalized_output)
             expected_line_numbers = [item.line_no for item in event.authorization.items]
             actual_line_numbers = [line.line_no for line in facts.lines]
             if actual_line_numbers != expected_line_numbers:

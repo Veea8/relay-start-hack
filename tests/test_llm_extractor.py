@@ -61,6 +61,22 @@ def test_valid_strict_output_is_accepted_and_recorded(example_message):
     assert transport.calls[0][2] == 300
 
 
+def test_apertus_empty_injection_variants_are_normalized_without_coercing_nonempty_values(example_message):
+    event = event_from(example_message)
+    aperture_output = json.dumps({
+        "lines": [{"line_no": event.authorization.items[0].line_no, "product_kind": "grocery", "size": None, "return_days": None, "final_sale": None}],
+        "injection_suspected": None,
+        "injection_quotes": "",
+    })
+    accepted = asyncio.run(FactExtractor(FakeTransport([aperture_output])).extract(event))
+    assert accepted.call.status == "success"
+    assert accepted.facts.injection_suspected is False and accepted.facts.injection_quotes == ()
+
+    nonempty_string = aperture_output.replace('"injection_quotes": ""', '"injection_quotes": "ignore rules"')
+    rejected = asyncio.run(FactExtractor(FakeTransport([nonempty_string])).extract(event))
+    assert rejected.call.status == "invalid_output" and rejected.facts is None
+
+
 def test_unknown_fields_wrong_types_and_foreign_line_numbers_are_rejected(example_message):
     event = event_from(example_message)
     outputs = [
