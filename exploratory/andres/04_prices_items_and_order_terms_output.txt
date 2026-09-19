@@ -1,0 +1,178 @@
+--- Cart lines joined to the catalogue ---
+56 lines, all names and categories agree with the catalogue
+
+--- Price of every cart line against the catalogue range ---
+scenario_id  replay_order authorization_id                  item_name  quantity  unit_price currency  unit_price_chf  unit_price_min_chf  unit_price_typical_chf  unit_price_max_chf  price_to_typical_ratio  is_below_catalogue_min  is_above_catalogue_max
+   SCEN0000             1           AU0001    Fresh produce selection         1        13.0      CHF           13.00                12.0                    28.0                90.0                    0.46                   False                   False
+   SCEN0001             1           AU0002    Fresh produce selection         1        18.5      CHF           18.50                12.0                    28.0                90.0                    0.66                   False                   False
+   SCEN0001             1           AU0002         Breakfast supplies         1        20.0      CHF           20.00                15.0                    30.0               100.0                    0.67                   False                   False
+   SCEN0001             2           AU0003      Weekly grocery basket         1        92.0      CHF           92.00                45.0                    95.0               180.0                    0.97                   False                   False
+   SCEN0001             2           AU0003    Fresh produce selection         1        22.0      CHF           22.00                12.0                    28.0                90.0                    0.79                   False                   False
+   SCEN0001             3           AU0004      Weekly grocery basket         1        88.0      CHF           88.00                45.0                    95.0               180.0                    0.93                   False                   False
+   SCEN0001             3           AU0004             Pantry staples         1        30.0      CHF           30.00                20.0                    50.0               140.0                    0.60                   False                   False
+   SCEN0001             4           AU0005    Fresh produce selection         1        24.0      CHF           24.00                12.0                    28.0                90.0                    0.86                   False                   False
+   SCEN0001             4           AU0005             Pantry staples         1        40.0      CHF           40.00                20.0                    50.0               140.0                    0.80                   False                   False
+   SCEN0001             5           AU0006         Breakfast supplies         1        27.0      CHF           27.00                15.0                    30.0               100.0                    0.90                   False                   False
+   SCEN0001             5           AU0006    Fresh produce selection         1        32.0      CHF           32.00                12.0                    28.0                90.0                    1.14                   False                   False
+   SCEN0001             6           AU0007    Fresh produce selection         1        24.0      CHF           24.00                12.0                    28.0                90.0                    0.86                   False                   False
+   SCEN0001             6           AU0007  Fragrance and beauty gift         1        32.0      CHF           32.00                25.0                    70.0               220.0                    0.46                   False                   False
+   SCEN0001             7           AU0008      Weekly grocery basket         1        45.0      CHF           45.00                45.0                    95.0               180.0                    0.47                   False                   False
+   SCEN0001             7           AU0008    Fresh produce selection         1        14.5      CHF           14.50                12.0                    28.0                90.0                    0.52                   False                   False
+   SCEN0001             8           AU0009         Breakfast supplies         1        18.0      CHF           18.00                15.0                    30.0               100.0                    0.60                   False                   False
+   SCEN0001             9           AU0010      Weekly grocery basket         1        95.0      CHF           95.00                45.0                    95.0               180.0                    1.00                   False                   False
+   SCEN0001             9           AU0010             Pantry staples         1        35.0      CHF           35.00                20.0                    50.0               140.0                    0.70                   False                   False
+   SCEN0001            10           AU0011      Weekly grocery basket         1        52.0      CHF           52.00                45.0                    95.0               180.0                    0.55                   False                   False
+   SCEN0001            10           AU0011    Fresh produce selection         1        30.0      CHF           30.00                12.0                    28.0                90.0                    1.07                   False                   False
+   SCEN0002             1           AU0012         Road-running shoes         1       165.0      CHF          165.00                70.0                   140.0               240.0                    1.18                   False                   False
+   SCEN0002             2           AU0013         Road-running shoes         1       155.0      CHF          155.00                70.0                   140.0               240.0                    1.11                   False                   False
+   SCEN0002             3           AU0014         Road-running shoes         1       145.0      CHF          145.00                70.0                   140.0               240.0                    1.04                   False                   False
+   SCEN0002             4           AU0015         Road-running shoes         1       158.0      CHF          158.00                70.0                   140.0               240.0                    1.13                   False                   False
+   SCEN0002             5           AU0016         Road-running shoes         1       175.0      CHF          175.00                70.0                   140.0               240.0                    1.25                   False                   False
+   SCEN0002             6           AU0017        Trail-running shoes         1       180.0      CHF          180.00                80.0                   150.0               260.0                    1.20                   False                   False
+   SCEN0002             7           AU0018         Road-running shoes         1       165.0      CHF          165.00                70.0                   140.0               240.0                    1.18                   False                   False
+   SCEN0002             7           AU0018   Extended protection plan         1        29.0      CHF           29.00                25.0                    79.0               180.0                    0.37                   False                   False
+   SCEN0002             8           AU0019         Road-running shoes         1       168.0      CHF          168.00                70.0                   140.0               240.0                    1.20                   False                   False
+   SCEN0002             9           AU0020             Cycling helmet         1       120.0      CHF          120.00                50.0                   110.0               250.0                    1.09                   False                   False
+   SCEN0002            10           AU0021         Road-running shoes         1       215.0      CHF          215.00                70.0                   140.0               240.0                    1.54                   False                   False
+   SCEN0002            11           AU0022         Road-running shoes         1       189.0      CHF          189.00                70.0                   140.0               240.0                    1.35                   False                   False
+   SCEN0002            12           AU0023         Road-running shoes         1       179.0      CHF          179.00                70.0                   140.0               240.0                    1.28                   False                   False
+   SCEN0003             1           AU0024            Everyday jacket         1       145.0      CHF          145.00                60.0                   140.0               280.0                    1.04                   False                   False
+   SCEN0003             2           AU0025    Seasonal clothing order         1       199.0      EUR          189.05                35.0                   100.0               260.0                    1.89                   False                   False
+   SCEN0003             3           AU0026            Everyday jacket         1       165.0      CHF          165.00                60.0                   140.0               280.0                    1.18                   False                   False
+   SCEN0003             4           AU0027 Everyday waterproof jacket         1       232.0      CHF          232.00                60.0                   140.0               280.0                    1.66                   False                   False
+   SCEN0003             5           AU0028    Seasonal clothing order         1       245.0      CHF          245.00                35.0                   100.0               260.0                    2.45                   False                   False
+   SCEN0003             6           AU0029            Everyday jacket         1       219.0      GBP          245.28                60.0                   140.0               280.0                    1.75                   False                   False
+   SCEN0003             7           AU0030 Everyday waterproof jacket         1       248.0      CHF          248.00                60.0                   140.0               280.0                    1.77                   False                   False
+   SCEN0003             8           AU0031                  Rain coat         1        95.0      CHF           95.00                50.0                   130.0               260.0                    0.73                   False                   False
+   SCEN0003             9           AU0032    Seasonal clothing order         1       260.0      EUR          247.00                35.0                   100.0               260.0                    2.47                   False                   False
+   SCEN0003            10           AU0033                  Rain coat         1       138.0      CHF          138.00                50.0                   130.0               260.0                    1.06                   False                   False
+   SCEN0003            11           AU0034            Everyday jacket         1       268.0      CHF          268.00                60.0                   140.0               280.0                    1.91                   False                   False
+   SCEN0004             1           AU0035   27-inch computer monitor         1       289.0      CHF          289.00               140.0                   270.0               650.0                    1.07                   False                   False
+   SCEN0004             2           AU0036   27-inch computer monitor         1       289.0      CHF          289.00               140.0                   270.0               650.0                    1.07                   False                   False
+   SCEN0004             3           AU0037   27-inch computer monitor         1       520.0      CHF          520.00               140.0                   270.0               650.0                    1.93                   False                   False
+   SCEN0004             4           AU0038   27-inch computer monitor         1       450.0      USD          391.50               140.0                   270.0               650.0                    1.45                   False                   False
+   SCEN0004             5           AU0039   27-inch computer monitor         1       340.0      CHF          340.00               140.0                   270.0               650.0                    1.26                   False                   False
+   SCEN0004             6           AU0040   27-inch computer monitor         1       299.0      CHF          299.00               140.0                   270.0               650.0                    1.11                   False                   False
+   SCEN0004             7           AU0041   27-inch computer monitor         1       380.0      CHF          380.00               140.0                   270.0               650.0                    1.41                   False                   False
+   SCEN0004             7           AU0041   Extended protection plan         1        79.0      CHF           79.00                25.0                    79.0               180.0                    1.00                   False                   False
+   SCEN0004             8           AU0042   27-inch computer monitor         1       350.0      CHF          350.00               140.0                   270.0               650.0                    1.30                   False                   False
+   SCEN0004             9           AU0043       Digital gift voucher         1       195.0      CHF          195.00                20.0                    50.0               200.0                    3.90                   False                   False
+   SCEN0004            10           AU0044   27-inch computer monitor         1       310.0      CHF          310.00               140.0                   270.0               650.0                    1.15                   False                   False
+   SCEN0004            11           AU0045   27-inch computer monitor         1       399.9      CHF          399.90               140.0                   270.0               650.0                    1.48                   False                   False
+
+--- Cart lines priced outside the catalogue range ---
+Empty DataFrame
+Columns: [scenario_id, replay_order, authorization_id, item_name, unit_price_chf, unit_price_min_chf, unit_price_max_chf]
+Index: []
+
+--- Purchases whose arithmetic does not add up ---
+Empty DataFrame
+Columns: [scenario_id, replay_order, authorization_id, sum_of_lines, items_subtotal, delivery_fee, amount, currency, billing_amount_chf]
+Index: []
+
+--- Lines per purchase, highest quantity and delivery fees ---
+lines per purchase: {1: 34, 2: 11}
+highest quantity on any line: 1
+scenario_id  replay_order authorization_id  items_subtotal  delivery_fee  amount
+   SCEN0000             1           AU0001            13.0           7.0    20.0
+   SCEN0001             1           AU0002            38.5           6.0    44.5
+   SCEN0001             2           AU0003           114.0           6.0   120.0
+   SCEN0001             3           AU0004           118.0           8.0   126.0
+   SCEN0001             4           AU0005            64.0           6.0    70.0
+   SCEN0001             5           AU0006            59.0           6.0    65.0
+   SCEN0001             6           AU0007            56.0           6.0    62.0
+   SCEN0001             7           AU0008            59.5           6.0    65.5
+   SCEN0001             8           AU0009            18.0           6.0    24.0
+   SCEN0001             9           AU0010           130.0           8.0   138.0
+   SCEN0001            10           AU0011            82.0           6.0    88.0
+
+--- Cart lines whose item category differs from the merchant category ---
+scenario_id  replay_order authorization_id merchant_name merchant_category  recurring_capable                 item_name  item_category                                                                       item_details
+   SCEN0001             6           AU0007 Alpine Basket         groceries              False Fragrance and beauty gift      cosmetics                                                Boxed fragrance and beauty gift set
+   SCEN0002             7           AU0018    TrailSpark    sporting_goods              False  Extended protection plan  subscriptions                       Optional add-on service, billed monthly after the first year
+   SCEN0002            11           AU0022     GreenLoop sustainable_goods              False        Road-running shoes sporting_goods                        Road-running shoe, size 43; returns accepted within 30 days
+   SCEN0004             7           AU0041   PixelHarbor       electronics              False  Extended protection plan  subscriptions                 Optional add-on service extending cover beyond the seller warranty
+   SCEN0004             9           AU0043   PixelHarbor       electronics              False      Digital gift voucher      gift_card Store credit voucher, redeemable against any purchase; issued immediately by email
+
+--- Distinct catalogue items per scenario ---
+scenario_id item_id                  item_name  item_category  lines                                                                      purchases
+   SCEN0000  IT0001    Fresh produce selection      groceries      1                                                                         AU0001
+   SCEN0001  IT0001    Fresh produce selection      groceries      7                         AU0002, AU0003, AU0005, AU0006, AU0007, AU0008, AU0011
+   SCEN0001  IT0002             Pantry staples      groceries      3                                                         AU0004, AU0005, AU0010
+   SCEN0001  IT0003         Breakfast supplies      groceries      3                                                         AU0002, AU0006, AU0009
+   SCEN0001  IT0004      Weekly grocery basket      groceries      5                                         AU0003, AU0004, AU0008, AU0010, AU0011
+   SCEN0001  IT0062  Fragrance and beauty gift      cosmetics      1                                                                         AU0007
+   SCEN0002  IT0014         Road-running shoes sporting_goods     10 AU0012, AU0013, AU0014, AU0015, AU0016, AU0018, AU0019, AU0021, AU0022, AU0023
+   SCEN0002  IT0063        Trail-running shoes sporting_goods      1                                                                         AU0017
+   SCEN0002  IT0064             Cycling helmet sporting_goods      1                                                                         AU0020
+   SCEN0002  IT0066   Extended protection plan  subscriptions      1                                                                         AU0018
+   SCEN0003  IT0009 Everyday waterproof jacket       clothing      2                                                                 AU0027, AU0030
+   SCEN0003  IT0049            Everyday jacket       clothing      4                                                 AU0024, AU0026, AU0029, AU0034
+   SCEN0003  IT0051    Seasonal clothing order       clothing      3                                                         AU0025, AU0028, AU0032
+   SCEN0003  IT0052                  Rain coat       clothing      2                                                                 AU0031, AU0033
+   SCEN0004  IT0005       Digital gift voucher      gift_card      1                                                                         AU0043
+   SCEN0004  IT0017   27-inch computer monitor    electronics     10 AU0035, AU0036, AU0037, AU0038, AU0039, AU0040, AU0041, AU0042, AU0044, AU0045
+   SCEN0004  IT0066   Extended protection plan  subscriptions      1                                                                         AU0041
+
+--- Structured return flag against what the shop sentence says ---
+order_returnable return_days_in_text  mentions_final_sale  mentions_not_stated  lines                                                                            example
+           false                none                False                False     20                                  One small basket of seasonal fruit and vegetables
+           false                none                 True                False      1                     Road-running shoe, size 43; clearance line, sold as final sale
+  not_applicable                none                False                False      1 Store credit voucher, redeemable against any purchase; issued immediately by email
+            true                  14                False                False     15                        Road-running shoe, size 43; returns accepted within 14 days
+            true                  30                False                False     15                        Road-running shoe, size 43; returns accepted within 30 days
+            true                   7                False                False      1                         Road-running shoe, size 43; returns accepted within 7 days
+            true                none                False                False      2                       Optional add-on service, billed monthly after the first year
+         unknown                none                False                 True      1                 Road-running shoe, size 43; return policy not stated by the seller
+
+--- Shop sentences where no return days were found ---
+scenario_id authorization_id  item_category order_returnable                                                                       item_details
+   SCEN0000           AU0001      groceries            false                                  One small basket of seasonal fruit and vegetables
+   SCEN0001           AU0002      groceries            false                                                      Seasonal fruit and vegetables
+   SCEN0001           AU0002      groceries            false                                                           Bread, oats, and yoghurt
+   SCEN0001           AU0003      groceries            false                                                  Weekly food and household staples
+   SCEN0001           AU0003      groceries            false                                                               Fruit and vegetables
+   SCEN0001           AU0004      groceries            false                                                      Rice, pasta, and tinned goods
+   SCEN0001           AU0005      groceries            false                                                           Dry store cupboard goods
+   SCEN0001           AU0006      groceries            false                                                                  Breakfast staples
+   SCEN0001           AU0007      cosmetics            false                                                Boxed fragrance and beauty gift set
+   SCEN0001           AU0008      groceries            false                                                         Food and household staples
+   SCEN0002           AU0014 sporting_goods            false                     Road-running shoe, size 43; clearance line, sold as final sale
+   SCEN0002           AU0016 sporting_goods          unknown                 Road-running shoe, size 43; return policy not stated by the seller
+   SCEN0002           AU0018  subscriptions             true                       Optional add-on service, billed monthly after the first year
+   SCEN0004           AU0041  subscriptions             true                 Optional add-on service extending cover beyond the seller warranty
+   SCEN0004           AU0043      gift_card   not_applicable Store credit voucher, redeemable against any purchase; issued immediately by email
+
+--- Catalogue entries for the categories the scenarios use ---
+item_id                     item_name  item_category  unit_price_min_chf  unit_price_typical_chf  unit_price_max_chf                                                                                           item_description
+ IT0049               Everyday jacket       clothing                60.0                   140.0               280.0                                                                          Everyday jacket for regular wear.
+ IT0009    Everyday waterproof jacket       clothing                60.0                   140.0               280.0                                                  Waterproof everyday jacket with a standard return window.
+ IT0052                     Rain coat       clothing                50.0                   130.0               260.0                                                                      Rain coat with a clear return window.
+ IT0051       Seasonal clothing order       clothing                35.0                   100.0               260.0                                                          Seasonal clothing order from a familiar retailer.
+ IT0011          Waterproof rain coat       clothing                50.0                   130.0               260.0                                             Lightweight waterproof rain coat with a shorter return window.
+ IT0010        Waterproof work jacket       clothing                55.0                   120.0               240.0                                                                  Waterproof jacket suited to working days.
+ IT0050                    Work shoes       clothing                55.0                   120.0               240.0                                                                   Work shoes for regular professional use.
+ IT0062     Fragrance and beauty gift      cosmetics                25.0                    70.0               220.0 Fragrance or beauty product of the kind usually bought as a personal treat rather than a household staple.
+ IT0061             Personal care set      cosmetics                10.0                    35.0               120.0                  Everyday personal care and cosmetics such as skincare, toiletries, and grooming products.
+ IT0017      27-inch computer monitor    electronics               140.0                   270.0               650.0                                      27-inch computer monitor covered by a standard manufacturer warranty.
+ IT0046              Computer monitor    electronics               140.0                   320.0               650.0                                                          Computer monitor with a standard seller warranty.
+ IT0045   Noise-cancelling headphones    electronics                60.0                   190.0               420.0                                          Noise-cancelling headphones from a specialist electronics seller.
+ IT0047                 Phone charger    electronics                10.0                    30.0                85.0                                                                         Phone charger and cable accessory.
+ IT0048              Tablet accessory    electronics                15.0                    60.0               180.0                                                              Tablet accessory such as a cover or keyboard.
+ IT0005          Digital gift voucher      gift_card                20.0                    50.0               200.0                                                     Digital gift card spendable with the issuing merchant.
+ IT0016            Premium membership     membership                15.0                    30.0                90.0                                                  Premium tier of a digital learning service for one month.
+ IT0055           Cycling accessories sporting_goods                15.0                    75.0               250.0                                                            Cycling accessories from a specialist retailer.
+ IT0064                Cycling helmet sporting_goods                50.0                   110.0               250.0                                                                Road cycling helmet sold in standard sizes.
+ IT0054                  Hiking boots sporting_goods                90.0                   180.0               320.0                                                                                Hiking boots for trail use.
+ IT0014            Road-running shoes sporting_goods                70.0                   140.0               240.0                                                            Road-running shoes available in standard sizes.
+ IT0053                 Running shoes sporting_goods                70.0                   140.0               240.0                                                                 Running shoes available in standard sizes.
+ IT0065                 Running socks sporting_goods                 8.0                    18.0                40.0                                                            Technical running socks, usually sold in packs.
+ IT0063           Trail-running shoes sporting_goods                80.0                   150.0               260.0                                         Off-road running shoes with a lugged sole, sold in standard sizes.
+ IT0056            Training equipment sporting_goods                20.0                    90.0               300.0                                                                    Training equipment for home or gym use.
+ IT0038            Cloud storage plan  subscriptions                 3.0                    10.0                24.0                                                                                Monthly cloud storage plan.
+ IT0039        Digital newspaper plan  subscriptions                 8.0                    18.0                35.0                                                                    Monthly digital newspaper subscription.
+ IT0066      Extended protection plan  subscriptions                25.0                    79.0               180.0                                 Optional add-on service extending repair cover beyond the seller warranty.
+ IT0015 Monthly learning subscription  subscriptions                 8.0                    19.0                70.0                                                              One month of a digital learning subscription.
+ IT0037    Monthly media subscription  subscriptions                 8.0                    16.0                28.0                                                       One month of a digital media streaming subscription.
+ IT0040                    Music plan  subscriptions                 8.0                    14.0                24.0                                                                      Monthly music streaming subscription.
+

@@ -1,0 +1,198 @@
+--- Purchases in the history ---
+4565 purchases, 258 declined, share 0.057
+
+--- Decline share with and without each signal ---
+                signal  signal_present  purchases  declined  decline_share
+    is_card_not_active           False       4559       252          0.055
+    is_card_not_active            True          6         6          1.000
+  is_first_time_device           False       4428       239          0.054
+  is_first_time_device            True        137        19          0.139
+is_first_time_merchant           False       3481       111          0.032
+is_first_time_merchant            True       1084       147          0.136
+   is_foreign_merchant           False       3787       114          0.030
+   is_foreign_merchant            True        778       144          0.185
+        is_high_amount           False       4213       220          0.052
+        is_high_amount            True        352        38          0.108
+              is_night           False       4332       224          0.052
+              is_night            True        233        34          0.146
+       is_rapid_series           False       4264       184          0.043
+       is_rapid_series            True        301        74          0.246
+
+--- Decline share by the number of signals a purchase carries ---
+ signal_count  purchases  declined  decline_share
+            0       2487        38          0.015
+            1       1440        66          0.046
+            2        488        81          0.166
+            3        126        58          0.460
+            4         23        15          0.652
+            5          1         0          0.000
+
+--- Decline share by initiator and channel ---
+initiator_type       channel  purchases  declined  decline_share
+         agent     ecommerce        359        24          0.067
+         agent     recurring         94        13          0.138
+         human     ecommerce       1984       101          0.051
+         human      in_store       1018        29          0.028
+         human mobile_wallet        605         9          0.015
+         human     recurring        505        82          0.162
+
+--- Decline share by amount relative to the card median ---
+   amount_band  purchases  declined  decline_share
+ (-0.001, 1.0]       2344       158          0.067
+    (1.0, 2.0]       1420        42          0.030
+    (2.0, 3.0]        451        20          0.044
+    (3.0, 5.0]        248        21          0.085
+   (5.0, 10.0]         78         6          0.077
+(10.0, 1000.0]         24        11          0.458
+
+--- Rows that follow another row on the same card within ten minutes ---
+302 rows, declined share 0.248
+  channel initiator_type merchant_category  rows  declined
+ecommerce          human         transport    30         9
+ecommerce          human          clothing    25         8
+ecommerce          human         groceries    25         4
+ecommerce          human         household    22         2
+ecommerce          human             books    20         4
+ecommerce          human     subscriptions    15         6
+recurring          human          software    13        11
+ecommerce          human     food_delivery    13         1
+recurring          human     subscriptions    12        10
+ecommerce          human       photography    10         0
+ecommerce          human            travel     9         3
+ecommerce          human       electronics     8         2
+ecommerce          agent     subscriptions     8         3
+ecommerce          agent         groceries     7         2
+ in_store          human            dining     6         0
+
+--- Rapid series on the clothing and monitor scenario cards, row by row ---
+card_id            timestamp  local_hour       channel initiator_type   status  billing_amount_chf       merchant_name merchant_category merchant_country  earlier_rows_within_ten_minutes  is_first_time_merchant  is_first_time_device
+ CA0023 2025-10-03T20:07:28Z          22     ecommerce          human declined               22.32    CloudShelf Books             books               CH                                0                    True                 False
+ CA0023 2025-10-03T20:13:17Z          22     ecommerce          human approved               22.32    CloudShelf Books             books               CH                                1                    True                 False
+ CA0023 2025-11-22T18:46:27Z          19     ecommerce          human approved               25.90   LakeLine Mobility         transport               CH                                0                    True                 False
+ CA0023 2025-11-22T18:48:31Z          19     ecommerce          human approved               18.95            MetroHop         transport               CH                                1                   False                 False
+ CA0023 2025-11-22T18:48:56Z          19     ecommerce          human approved               30.50   LakeLine Mobility         transport               CH                                2                   False                 False
+ CA0023 2025-11-22T18:55:11Z          19     ecommerce          human approved               20.95   LakeLine Mobility         transport               CH                                3                   False                 False
+ CA0023 2026-03-09T13:12:44Z          14     ecommerce          human approved               14.00 BrightPage Learning             books               CH                                0                   False                 False
+ CA0023 2026-03-09T13:18:59Z          14     ecommerce          human approved               19.90    CloudShelf Books             books               CH                                1                   False                 False
+ CA0023 2026-03-09T13:19:24Z          14     ecommerce          human declined               33.50    CloudShelf Books             books               CH                                2                   False                 False
+ CA0023 2026-04-14T14:01:55Z          16     ecommerce          human approved              678.81        ScreenGarden     entertainment               CH                                0                    True                 False
+ CA0023 2026-04-14T14:03:49Z          16     ecommerce          human approved              122.00        ScreenGarden     entertainment               CH                                1                   False                 False
+ CA0023 2026-04-14T14:04:11Z          16     ecommerce          agent approved               66.50        ScreenGarden     entertainment               CH                                2                   False                 False
+ CA0023 2026-04-14T14:07:08Z          16     ecommerce          human approved               88.00          EventForge     entertainment               CH                                3                    True                 False
+ CA0023 2026-05-21T18:03:25Z          20 mobile_wallet          human approved               26.19            MetroHop         transport               CH                                0                   False                 False
+ CA0023 2026-05-21T18:03:56Z          20      in_store          human approved               73.00     Basil and Board            dining               CH                                1                   False                 False
+ CA0023 2026-07-11T20:58:16Z          22     ecommerce          human approved               46.40            MealWing     food_delivery               CH                                0                   False                 False
+ CA0023 2026-07-11T21:01:15Z          23     ecommerce          human approved               34.39    NightOwl Kitchen     food_delivery               CH                                1                   False                 False
+ CA0023 2026-07-11T21:07:46Z          23     ecommerce          human approved               45.50            MealWing     food_delivery               CH                                2                   False                 False
+ CA0039 2025-09-13T17:22:05Z          19     ecommerce          human approved              101.95        Thames Weave          clothing               GB                                0                    True                 False
+ CA0039 2025-09-13T17:23:14Z          19     ecommerce          human approved              111.95    Cobalt Coatworks          clothing               CH                                1                    True                  True
+ CA0039 2025-09-25T11:33:17Z          13     ecommerce          human approved               20.00 BrightPage Learning             books               CH                                0                    True                 False
+ CA0039 2025-09-25T11:34:20Z          13     ecommerce          human approved               21.17 BrightPage Learning             books               CH                                1                   False                 False
+ CA0039 2025-09-25T11:37:29Z          13     ecommerce          human approved               24.50    CloudShelf Books             books               CH                                2                    True                 False
+ CA0039 2025-09-25T11:43:05Z          13     ecommerce          human approved               19.00   London Leaf Books             books               GB                                3                    True                 False
+ CA0039 2025-12-22T12:16:49Z          13     ecommerce          human approved               16.50   LakeLine Mobility         transport               CH                                0                   False                 False
+ CA0039 2025-12-22T12:22:07Z          13     ecommerce          human declined               26.90            MetroHop         transport               CH                                1                    True                 False
+ CA0039 2025-12-22T12:23:11Z          13     ecommerce          human approved               65.36            RailNest         transport               CH                                2                   False                 False
+ CA0039 2025-12-22T12:26:23Z          13     ecommerce          human approved               26.90            MetroHop         transport               CH                                3                    True                 False
+ CA0039 2026-02-06T08:57:00Z           9     ecommerce          human declined              131.00          HarborByte       electronics               US                                0                   False                 False
+ CA0039 2026-02-06T08:59:21Z           9     ecommerce          human approved              131.00          HarborByte       electronics               US                                1                   False                 False
+ CA0039 2026-03-18T11:12:45Z          12     ecommerce          human approved               24.00   LakeLine Mobility         transport               CH                                0                   False                 False
+ CA0039 2026-03-18T11:16:03Z          12     ecommerce          human approved               10.90   LakeLine Mobility         transport               CH                                1                   False                 False
+ CA0039 2026-07-21T11:00:06Z          13     ecommerce          human approved               28.95   London Leaf Books             books               GB                                0                   False                 False
+ CA0039 2026-07-21T11:07:51Z          13     ecommerce          human approved               45.90   LakeLine Mobility         transport               CH                                1                   False                 False
+
+--- Declined rows on the scenario cards ---
+card_id            timestamp  local_hour   channel initiator_type  billing_amount_chf  amount_to_card_median    merchant_name merchant_country  is_first_time_merchant  is_first_time_device  earlier_rows_within_ten_minutes
+ CA0001 2025-10-16T17:06:07Z          19  in_store          human               36.51                   0.91    Alpine Basket               CH                   False                 False                                0
+ CA0001 2026-04-29T18:35:09Z          20 ecommerce          human               33.95                   0.85         RailNest               CH                    True                 False                                0
+ CA0011 2025-10-07T16:03:34Z          18 ecommerce          human               23.00                   0.46   StoryArc Media               CH                   False                 False                                0
+ CA0023 2025-10-03T20:07:28Z          22 ecommerce          human               22.32                   0.43 CloudShelf Books               CH                    True                 False                                0
+ CA0023 2025-10-08T20:29:53Z          22 ecommerce          human               44.25                   0.86         RailNest               CH                    True                 False                                0
+ CA0023 2026-03-09T13:19:24Z          14 ecommerce          human               33.50                   0.65 CloudShelf Books               CH                   False                 False                                2
+ CA0023 2026-07-17T22:52:24Z           0 ecommerce          human               56.00                   1.08         MealWing               CH                   False                 False                                0
+ CA0039 2025-12-22T12:22:07Z          13 ecommerce          human               26.90                   0.71         MetroHop               CH                    True                 False                                1
+ CA0039 2026-01-31T20:33:46Z          21 ecommerce          human              390.90                  10.33       HarborByte               US                   False                 False                                0
+ CA0039 2026-02-06T08:57:00Z           9 ecommerce          human              131.00                   3.46       HarborByte               US                   False                 False                                0
+
+--- Agent and human purchases on the ecommerce and recurring channels ---
+  channel initiator_type  purchases  decline_share  median_chf  first_time_merchant_share  foreign_share  night_share
+ecommerce          agent        359          0.067       44.79                      0.253          0.142        0.028
+ecommerce          human       1984          0.051       43.65                      0.232          0.142        0.030
+recurring          agent         94          0.138       16.45                      0.213          0.489        0.202
+recurring          human        505          0.162       17.07                      0.216          0.535        0.267
+
+--- Agent purchases by merchant category ---
+merchant_category  purchases  declined  median_chf
+    subscriptions        105        10      17.000
+        transport         51         4      26.500
+        groceries         47         3      61.220
+         software         46         8      16.000
+    food_delivery         37         1      33.000
+         clothing         37         2      98.900
+            books         32         0      32.420
+        household         23         0      36.580
+            hotel         14         3     281.280
+    entertainment         11         0      66.000
+           health          9         0      58.440
+         pet_care          8         0      54.900
+      photography          8         3     177.120
+   sporting_goods          7         0     106.950
+      kids_family          5         0      46.000
+      electronics          5         1     171.900
+           travel          3         1     215.680
+ home_improvement          2         0      68.810
+sustainable_goods          2         0      37.765
+           dining          1         1      52.300
+
+--- Agent purchases on the scenario cards ---
+card_id            timestamp   channel   status  billing_amount_chf       merchant_name merchant_category  is_first_time_merchant                    description
+ CA0001 2025-09-25T16:55:02Z ecommerce approved                8.50      StoryArc Media     subscriptions                    True Productivity tool subscription
+ CA0001 2025-10-25T12:43:43Z ecommerce approved               13.84      StoryArc Media     subscriptions                   False                     Music plan
+ CA0001 2025-11-03T16:05:44Z ecommerce approved               80.00       Alpine Basket         groceries                   False      Family breakfast supplies
+ CA0001 2025-11-24T06:18:19Z recurring approved               14.20          WorkCanvas          software                   False                     Music plan
+ CA0001 2025-11-24T18:08:06Z ecommerce approved               31.08       Alpine Basket         groceries                   False                 Pantry restock
+ CA0001 2025-12-11T19:06:20Z ecommerce approved               47.95    NightOwl Kitchen     food_delivery                   False                Dinner delivery
+ CA0001 2026-02-17T06:27:05Z recurring approved               10.95   NorthTone Digital     subscriptions                   False         Digital newspaper plan
+ CA0001 2026-03-04T15:11:52Z ecommerce approved               24.98            MealWing     food_delivery                   False                Late-shift meal
+ CA0001 2026-03-27T14:36:59Z ecommerce approved               29.50      StoryArc Media     subscriptions                   False             Cloud storage plan
+ CA0001 2026-04-20T09:02:52Z ecommerce approved              104.98       Loom and Pine          clothing                    True        Seasonal clothing order
+ CA0001 2026-04-21T17:03:18Z ecommerce approved               30.90            RoomKind         household                   False              Cleaning supplies
+ CA0001 2026-05-10T12:46:32Z ecommerce approved               73.55      Little Lantern       kids_family                    True            Children's rainwear
+ CA0001 2026-05-12T13:01:40Z ecommerce approved               43.75    NightOwl Kitchen     food_delivery                   False                Dinner delivery
+ CA0001 2026-07-24T04:42:56Z recurring approved               14.20          WorkCanvas          software                   False Productivity tool subscription
+ CA0011 2025-10-18T04:01:25Z recurring approved                9.90      StoryArc Media     subscriptions                   False                     Music plan
+ CA0011 2025-12-03T13:05:52Z ecommerce approved               65.50          TrailSpark    sporting_goods                   False            Trail-running shoes
+ CA0011 2025-12-27T06:23:55Z recurring approved               11.38      StoryArc Media     subscriptions                   False Productivity tool subscription
+ CA0011 2026-03-11T17:23:15Z ecommerce approved              132.00          TrailSpark    sporting_goods                   False                  Running shoes
+ CA0011 2026-04-06T10:10:50Z ecommerce approved               45.50   LakeLine Mobility         transport                   False           Monthly transit pass
+ CA0011 2026-04-07T15:36:46Z ecommerce approved               22.00      StoryArc Media     subscriptions                   False Productivity tool subscription
+ CA0011 2026-04-17T17:20:24Z recurring approved               66.47      StoryArc Media     subscriptions                   False     Monthly media subscription
+ CA0011 2026-04-27T04:22:43Z recurring approved               11.38      StoryArc Media     subscriptions                   False                     Music plan
+ CA0011 2026-07-02T11:19:44Z ecommerce approved               13.90 BrightPage Learning             books                    True           Paperback book order
+ CA0011 2026-07-10T17:56:57Z ecommerce approved              145.10     AlpenWerk Sport    sporting_goods                   False             Training equipment
+ CA0011 2026-07-27T04:34:51Z recurring approved               11.38      StoryArc Media     subscriptions                   False         Digital newspaper plan
+ CA0023 2025-10-13T05:38:40Z recurring approved               35.33      StoryArc Media     subscriptions                   False     Monthly media subscription
+ CA0023 2025-10-29T18:58:34Z ecommerce approved               90.50        Milano Weave          clothing                   False        Seasonal clothing order
+ CA0023 2025-12-09T18:12:32Z ecommerce approved               86.29  Sunrise Provisions         groceries                   False            Weekly grocery shop
+ CA0023 2025-12-12T20:43:58Z ecommerce approved              112.31       Loom and Pine          clothing                   False            Children's rainwear
+ CA0023 2025-12-13T04:33:11Z recurring approved               35.33      StoryArc Media     subscriptions                   False         Digital newspaper plan
+ CA0023 2026-01-19T15:10:24Z ecommerce approved               19.90            RailNest         transport                    True               Airport transfer
+ CA0023 2026-01-29T21:00:15Z ecommerce approved               23.44      StoryArc Media     subscriptions                   False             Cloud storage plan
+ CA0023 2026-01-30T23:14:46Z ecommerce approved               44.90    NightOwl Kitchen     food_delivery                   False           Prepared lunch order
+ CA0023 2026-04-14T14:04:11Z ecommerce approved               66.50        ScreenGarden     entertainment                   False                 Cinema tickets
+ CA0023 2026-05-29T20:22:08Z ecommerce approved               36.00      StoryArc Media     subscriptions                   False Productivity tool subscription
+ CA0023 2026-05-30T22:11:48Z ecommerce approved               61.67 BrightPage Learning             books                   False           Paperback book order
+ CA0023 2026-06-05T18:08:46Z ecommerce approved              154.00    NightOwl Kitchen     food_delivery                   False                Late-shift meal
+ CA0023 2026-06-15T12:25:57Z ecommerce approved              119.00  Sunrise Provisions         groceries                   False                 Pantry restock
+ CA0023 2026-06-28T18:57:12Z ecommerce approved              128.05          EventForge     entertainment                   False                  Museum passes
+ CA0039 2025-09-11T04:56:32Z recurring approved               27.00          WorkCanvas          software                    True         Digital newspaper plan
+ CA0039 2025-10-25T16:22:57Z ecommerce approved               56.70   LakeLine Mobility         transport                    True           Regional rail ticket
+ CA0039 2025-11-06T10:19:35Z ecommerce approved               31.65            RailNest         transport                    True           Regional rail ticket
+ CA0039 2026-02-11T02:47:09Z recurring approved               27.00          WorkCanvas          software                   False Productivity tool subscription
+ CA0039 2026-02-12T18:03:50Z ecommerce approved               20.53   NorthTone Digital     subscriptions                   False                     Music plan
+ CA0039 2026-05-01T05:00:50Z recurring approved                5.95      StoryArc Media     subscriptions                   False     Monthly media subscription
+
+--- Refunds ---
+53 refunds, 53 point back to a purchase in the history
+refunds on the scenario cards: 7
+

@@ -1,0 +1,466 @@
+--- Customers no public scenario uses ---
+16 of 20
+
+--- Catalogue items that appear in no public scenario ---
+51 of 66 items
+item_id                         item_name    item_category  unit_price_typical_chf  unit_price_max_chf                                                                          item_description
+ IT0043               Children's book set            books                    40.0                85.0                                               Set of children's books with clear pricing.
+ IT0044                     E-book bundle            books                    35.0                75.0                                             Bundle of digital books on a single purchase.
+ IT0041              Paperback book order            books                    25.0                55.0                                                   Paperback book order from a bookseller.
+ IT0042       Professional reference book            books                    70.0               140.0                                                 Technical reference or professional book.
+ IT0011              Waterproof rain coat         clothing                   130.0               260.0                            Lightweight waterproof rain coat with a shorter return window.
+ IT0010            Waterproof work jacket         clothing                   120.0               240.0                                                 Waterproof jacket suited to working days.
+ IT0050                        Work shoes         clothing                   120.0               240.0                                                  Work shoes for regular professional use.
+ IT0061                 Personal care set        cosmetics                    35.0               120.0 Everyday personal care and cosmetics such as skincare, toiletries, and grooming products.
+ IT0029                Dinner reservation           dining                    85.0               160.0                                                   Reserved dinner for one or more guests.
+ IT0030                       Lunch order           dining                    35.0                70.0                                                   Quick lunch order at a café or counter.
+ IT0031                         Team meal           dining                   140.0               280.0                                                             Shared meal for a small team.
+ IT0032                    Weekend brunch           dining                    55.0               110.0                                                         Weekend brunch for a small group.
+ IT0046                  Computer monitor      electronics                   320.0               650.0                                         Computer monitor with a standard seller warranty.
+ IT0045       Noise-cancelling headphones      electronics                   190.0               420.0                         Noise-cancelling headphones from a specialist electronics seller.
+ IT0047                     Phone charger      electronics                    30.0                85.0                                                        Phone charger and cable accessory.
+ IT0048                  Tablet accessory      electronics                    60.0               180.0                                             Tablet accessory such as a cover or keyboard.
+ IT0033                   Dinner delivery    food_delivery                    50.0                90.0                                                    Prepared dinner delivered to the door.
+ IT0035              Family meal delivery    food_delivery                    70.0               120.0                                         Family-sized prepared meal delivered to the door.
+ IT0034                   Late-shift meal    food_delivery                    35.0                70.0                                             Prepared meal ordered outside standard hours.
+ IT0036              Prepared lunch order    food_delivery                    30.0                60.0                                     Prepared lunch ordered online for pickup or delivery.
+ IT0026 Electric vehicle charging session             fuel                    30.0                65.0                                                    One electric-vehicle charging session.
+ IT0028                 Fuel and car wash             fuel                    90.0               145.0                                                   Fuel purchase combined with a car wash.
+ IT0025                     Fuel purchase             fuel                    75.0               130.0                                                  Standard fuel fill at a service station.
+ IT0027             Motorway service stop             fuel                    35.0                90.0                                         Fuel and refreshments at a motorway service area.
+ IT0020         Family breakfast supplies        groceries                    45.0               100.0                                                     Breakfast staples sized for a family.
+ IT0018               Fresh produce order        groceries                    42.0                90.0                                      Standing fresh produce order with seasonal contents.
+ IT0019                    Pantry restock        groceries                    60.0               140.0                                               Restock of shared household pantry staples.
+ IT0060              Kitchen repair parts home_improvement                    80.0               260.0                                                          Spare parts for kitchen repairs.
+ IT0059                Shelving materials home_improvement                   140.0               420.0                                                    Shelving materials sized for one room.
+ IT0058                          Tool set home_improvement                   150.0               480.0                                                            Tool set for home repair work.
+ IT0057            Wall paint and brushes home_improvement                   120.0               260.0                                          Wall paint and brushes for a renovation project.
+ IT0012                        Hotel room            hotel                   280.0               620.0         Hotel room booking; cancellation terms vary by rate and are carried on the order.
+ IT0013           Serviced apartment stay            hotel                   280.0               620.0 Serviced apartment booking; cancellation terms vary by rate and are carried on the order.
+ IT0008                 Cleaning supplies        household                    45.0               110.0                             Surface and laundry cleaning products in standard pack sizes.
+ IT0007              Household essentials        household                    70.0               180.0                                          Shared consumables and common household refills.
+ IT0006        Kitchen storage containers        household                    38.0               190.0                                               Reusable food containers in assorted sizes.
+ IT0016                Premium membership       membership                    30.0                90.0                                 Premium tier of a digital learning service for one month.
+ IT0055               Cycling accessories   sporting_goods                    75.0               250.0                                           Cycling accessories from a specialist retailer.
+ IT0054                      Hiking boots   sporting_goods                   180.0               320.0                                                               Hiking boots for trail use.
+ IT0053                     Running shoes   sporting_goods                   140.0               240.0                                                Running shoes available in standard sizes.
+ IT0065                     Running socks   sporting_goods                    18.0                40.0                                           Technical running socks, usually sold in packs.
+ IT0056                Training equipment   sporting_goods                    90.0               300.0                                                   Training equipment for home or gym use.
+ IT0038                Cloud storage plan    subscriptions                    10.0                24.0                                                               Monthly cloud storage plan.
+ IT0039            Digital newspaper plan    subscriptions                    18.0                35.0                                                   Monthly digital newspaper subscription.
+ IT0015     Monthly learning subscription    subscriptions                    19.0                70.0                                             One month of a digital learning subscription.
+ IT0037        Monthly media subscription    subscriptions                    16.0                28.0                                      One month of a digital media streaming subscription.
+ IT0040                        Music plan    subscriptions                    14.0                24.0                                                     Monthly music streaming subscription.
+ IT0023                  Airport transfer        transport                    75.0               150.0                                        Prepaid transfer between the city and the airport.
+ IT0024                     City day pass        transport                    12.0                30.0                                       Day pass for unlimited travel within one city zone.
+ IT0022              Monthly transit pass        transport                    90.0               140.0                                     Monthly pass for unlimited regional public transport.
+ IT0021              Regional rail ticket        transport                    28.0                80.0                                       Single journey ticket on regional public transport.
+
+--- Merchant categories and how many of their merchants the public scenarios use ---
+merchant_category  merchants  used_in_public_scenarios
+         clothing          5                         5
+      electronics          4                         4
+   sporting_goods          4                         2
+        groceries          5                         1
+sustainable_goods          2                         1
+  cash_withdrawal          1                         0
+    entertainment          2                         0
+           dining          4                         0
+            books          3                         0
+    food_delivery          2                         0
+ home_improvement          3                         0
+            hotel          2                         0
+             fuel          2                         0
+           health          2                         0
+      kids_family          2                         0
+        household          2                         0
+      photography          2                         0
+         pet_care          2                         0
+         software          2                         0
+    subscriptions          2                         0
+        transport          3                         0
+           travel          2                         0
+
+--- Cards of the unused customers ---
+customer_id card_id card_type      card_purpose  status  international_enabled  virtual_card  account_purpose  per_transaction_limit_chf  monthly_limit_chf
+     CU0002  CA0003    credit          everyday  active                   True         False   daily_spending                       3000               8500
+     CU0002  CA0004    credit            travel  active                   True         False           travel                       3500               9500
+     CU0003  CA0005     debit          everyday  active                   True         False   daily_spending                       1600               5500
+     CU0003  CA0006   prepaid            travel  active                   True         False           travel                        800               2800
+     CU0004  CA0007     debit          everyday  active                  False         False   daily_spending                       1000               4000
+     CU0005  CA0008     debit          everyday  active                  False         False   daily_spending                       1200               4500
+     CU0005  CA0009     debit mobile_and_online blocked                  False          True   daily_spending                       1200               4500
+     CU0005  CA0010   prepaid            online  active                   True          True           online                       1000               3600
+     CU0007  CA0013     debit          everyday  active                   True         False   daily_spending                       1600               5500
+     CU0007  CA0014    credit        renovation  active                   True         False       renovation                       3000               8500
+     CU0008  CA0015     debit          everyday  active                   True         False   daily_spending                       1000               4000
+     CU0008  CA0016     debit mobile_and_online  active                   True          True   daily_spending                       1000               4000
+     CU0008  CA0017     debit            family  active                   True         False           family                       1000               3600
+     CU0009  CA0018     debit          everyday  active                   True         False   daily_spending                       1200               4500
+     CU0009  CA0019     debit mobile_and_online  active                   True          True   daily_spending                       1200               4500
+     CU0010  CA0020    credit          everyday  active                   True         False   daily_spending                       2500               7500
+     CU0010  CA0021    credit          business  active                   True          True         business                       3000               8500
+     CU0011  CA0022     debit          everyday  active                  False         False   daily_spending                       1600               5500
+     CU0013  CA0025     debit          everyday  active                  False         False   daily_spending                       1200               4500
+     CU0013  CA0026     debit mobile_and_online expired                  False          True   daily_spending                       1200               4500
+     CU0014  CA0027    credit          everyday  active                   True         False   daily_spending                       3000               8500
+     CU0014  CA0028    credit mobile_and_online  active                   True          True   daily_spending                       3000               8500
+     CU0014  CA0029    credit            events  active                   True         False           events                       3500               9500
+     CU0015  CA0030    credit          everyday  active                   True         False   daily_spending                       2000               6500
+     CU0015  CA0031    credit mobile_and_online  active                   True          True   daily_spending                       2000               6500
+     CU0016  CA0032     debit          everyday  active                  False         False   daily_spending                       1000               4000
+     CU0016  CA0033     debit          pet_care  active                  False         False         pet_care                        900               3200
+     CU0017  CA0034     debit          everyday  active                   True         False   daily_spending                       1200               4500
+     CU0018  CA0035     debit          everyday  active                   True         False   daily_spending                       1400               5000
+     CU0018  CA0036     debit mobile_and_online  active                   True          True   daily_spending                       1400               5000
+     CU0018  CA0037     debit  shared_household  active                   True         False shared_household                        800               2800
+     CU0020  CA0040    credit          everyday  active                   True         False   daily_spending                       3000               8500
+     CU0020  CA0041    credit mobile_and_online  active                   True          True   daily_spending                       3000               8500
+
+--- Normal behavior of the unused customers ---
+customer_id  purchases  night_share  foreign_share  agent_share          countries  median_chf  p95_chf  max_chf
+     CU0002        194        0.005          0.490        0.113         CH, DE, NL       100.0    433.0    657.0
+     CU0003        171        0.006          0.281        0.035     AT, CH, IT, US        65.0    153.0    261.0
+     CU0004        244        0.131          0.000        0.107                 CH        32.0     82.0    361.0
+     CU0005        155        0.000          0.123        0.181             CH, GB        26.0    101.0    300.0
+     CU0007        185        0.011          0.027        0.054         CH, FR, IT        58.0    158.0    926.0
+     CU0008        212        0.005          0.042        0.099         CH, DE, GB        41.0    105.0    159.0
+     CU0009        193        0.041          0.005        0.145             CH, GB        40.0     91.0    482.0
+     CU0010        167        0.000          0.395        0.174 CH, DE, GB, NL, US        75.0    306.0   1168.0
+     CU0011        192        0.005          0.000        0.000                 CH        41.0    103.0    234.0
+     CU0013        166        0.000          0.000        0.048                 CH        38.0    102.0    152.0
+     CU0014        208        0.024          0.082        0.087         CH, DE, IT        52.0    220.0    476.0
+     CU0015        159        0.013          0.182        0.063             CH, FR        74.0    249.0    760.0
+     CU0016        204        0.005          0.000        0.074                 CH        41.0    109.0    332.0
+     CU0017        174        0.011          0.017        0.046             CH, FR        44.0    129.0    631.0
+     CU0018        216        0.000          0.042        0.079             CH, DE        42.0    113.0    538.0
+     CU0020        198        0.030          0.035        0.131         CH, GB, IT        40.0    139.0    398.0
+
+--- Four most used merchant categories per unused customer ---
+customer_id merchant_category  purchases  total_chf
+     CU0002            dining         39     3470.0
+     CU0002             hotel         39    11966.0
+     CU0002         transport         24      952.0
+     CU0002            travel         24     5993.0
+     CU0003    sporting_goods         38     4322.0
+     CU0003         groceries         29     1736.0
+     CU0003            dining         22     1471.0
+     CU0003              fuel         20     1611.0
+     CU0004     food_delivery         52     2171.0
+     CU0004         groceries         41     1951.0
+     CU0004         transport         39      898.0
+     CU0004            health         32     1366.0
+     CU0005     subscriptions         32      562.0
+     CU0005             books         25      846.0
+     CU0005         transport         21      429.0
+     CU0005            dining         19      756.0
+     CU0007         household         44     2906.0
+     CU0007  home_improvement         34     4352.0
+     CU0007         groceries         20     2252.0
+     CU0007 sustainable_goods         18      940.0
+     CU0008         groceries         56     3146.0
+     CU0008       kids_family         36     1757.0
+     CU0008            health         34     1485.0
+     CU0008             books         20      575.0
+     CU0009         groceries         51     3402.0
+     CU0009         household         40     1711.0
+     CU0009     food_delivery         29     1392.0
+     CU0009            dining         20      822.0
+     CU0010          software         28     1557.0
+     CU0010       electronics         24     4857.0
+     CU0010         groceries         20     1609.0
+     CU0010     subscriptions         19      507.0
+     CU0011         groceries         56     2815.0
+     CU0011            dining         40     1800.0
+     CU0011         transport         28      806.0
+     CU0011             books         15      450.0
+     CU0013         groceries         39     1609.0
+     CU0013 sustainable_goods         26      999.0
+     CU0013         household         20      755.0
+     CU0013  home_improvement         19     1424.0
+     CU0014     entertainment         37     2757.0
+     CU0014         groceries         34     2684.0
+     CU0014         transport         31     1258.0
+     CU0014            dining         28     1616.0
+     CU0015       photography         47     8305.0
+     CU0015         groceries         30     2165.0
+     CU0015            dining         26     1541.0
+     CU0015         transport         13      447.0
+     CU0016          pet_care         48     2436.0
+     CU0016         groceries         38     1789.0
+     CU0016            health         30     1307.0
+     CU0016            dining         19     1015.0
+     CU0017         groceries         45     2506.0
+     CU0017         household         29     1191.0
+     CU0017            dining         21     1153.0
+     CU0017         transport         17     1013.0
+     CU0018         groceries         70     4540.0
+     CU0018         transport         35     1006.0
+     CU0018         household         27     1650.0
+     CU0018            dining         22      894.0
+     CU0020     food_delivery         45     2249.0
+     CU0020         groceries         40     2022.0
+     CU0020         transport         30      704.0
+     CU0020          clothing         26     2867.0
+
+--- Three categories where each unused customer's agent has bought most ---
+customer_id merchant_category  agent_rows
+     CU0002     subscriptions          11
+     CU0002             hotel           9
+     CU0002          software           7
+     CU0003          software           5
+     CU0003    sporting_goods           3
+     CU0003     subscriptions           2
+     CU0004     food_delivery           9
+     CU0004         groceries           6
+     CU0004          software           5
+     CU0005     subscriptions          22
+     CU0005         transport           7
+     CU0005             books           3
+     CU0007     subscriptions           5
+     CU0007         household           3
+     CU0007             books           2
+     CU0008         groceries           4
+     CU0008         household           4
+     CU0008            health           3
+     CU0009     food_delivery           8
+     CU0009         groceries           6
+     CU0009         household           5
+     CU0010     subscriptions          12
+     CU0010          software           9
+     CU0010       electronics           4
+     CU0011          software           2
+     CU0013         groceries           3
+     CU0013         household           2
+     CU0013 sustainable_goods           2
+     CU0014     entertainment           6
+     CU0014          clothing           4
+     CU0014     subscriptions           4
+     CU0015       photography           8
+     CU0015     subscriptions           5
+     CU0015         transport           2
+     CU0016          pet_care           8
+     CU0016     subscriptions           4
+     CU0016             books           3
+     CU0017     subscriptions           3
+     CU0017         transport           3
+     CU0017          clothing           2
+     CU0018         groceries           6
+     CU0018         transport           4
+     CU0018     subscriptions           3
+     CU0020     food_delivery           8
+     CU0020          clothing           6
+     CU0020     subscriptions           6
+
+--- Profile and best known merchants in the two most used categories ---
+CU0002  Sofia Keller  (flexible)
+  background            Travels regularly for consulting work and separates travel spending from everyday purchases.
+  shopping_preferences  Flexible hotel bookings near public transport and simple expense documentation.
+  typical_spending      Frequent rail, hotel, and restaurant payments in Switzerland, Germany, and France.
+  travel_pattern        Regular business travel in Germany and France.
+merchant_category   merchant_name merchant_country  purchases
+           dining Riverside Plate               DE         30
+           dining Basil and Board               CH          5
+           dining     Cedar Table               CH          4
+            hotel  IsarNest Hotel               DE         32
+            hotel      SummitStay               CH          7
+
+CU0003  Luca Bernasconi  (balanced)
+  background            Spends weekends hiking and climbing, with seasonal trips across the nearby Italian border.
+  shopping_preferences  Repairable outdoor equipment and specialist sports shops rather than fashion purchases.
+  typical_spending      Sports purchases, fuel, casual dining, and periodic EUR transactions in northern Italy.
+  travel_pattern        Seasonal leisure travel in Italy.
+merchant_category      merchant_name merchant_country  purchases
+        groceries Sunrise Provisions               CH         16
+        groceries      Alpine Basket               CH          5
+        groceries    Lakeview Grocer               CH          5
+        groceries   Neighbour Pantry               CH          3
+   sporting_goods    AlpenWerk Sport               AT         23
+   sporting_goods         TrailSpark               CH          9
+   sporting_goods Cascade Outfitters               US          4
+   sporting_goods      Summit Thread               CH          2
+
+CU0004  Noor Haddad  (careful)
+  background            Works rotating hospital shifts and often buys meals and essentials outside standard office hours.
+  shopping_preferences  Fast grocery delivery and practical meals after late shifts; avoids energy drinks.
+  typical_spending      Groceries, meal delivery, transport, and pharmacy purchases, including legitimate late-night activity.
+  travel_pattern        Rarely travels abroad.
+merchant_category      merchant_name merchant_country  purchases
+    food_delivery   NightOwl Kitchen               CH         40
+    food_delivery           MealWing               CH         12
+        groceries    Lakeview Grocer               CH         13
+        groceries   Neighbour Pantry               CH         11
+        groceries Sunrise Provisions               CH         10
+        groceries      Alpine Basket               CH          7
+
+CU0005  Emma Roth  (careful)
+  background            Studies part-time while working and relies on several digital learning services.
+  shopping_preferences  Books and learning tools with transparent prices; no automatic premium upgrades.
+  typical_spending      Small recurring subscriptions, book purchases, transport, and inexpensive cafés.
+  travel_pattern        Occasional domestic trips only.
+merchant_category       merchant_name merchant_country  purchases
+            books BrightPage Learning               CH         20
+            books    CloudShelf Books               CH          4
+            books   London Leaf Books               GB          1
+    subscriptions      StoryArc Media               CH         18
+    subscriptions   NorthTone Digital               GB         14
+
+CU0007  Camille Dubois  (balanced)
+  background            Is gradually renovating an apartment and plans each room as a separate project.
+  shopping_preferences  Simple repairable fittings, neutral colours, and click-and-collect when available.
+  typical_spending      Home-improvement stores, household purchases, transport, and occasional furniture deliveries.
+  travel_pattern        Rare short visits to France.
+merchant_category   merchant_name merchant_country  purchases
+ home_improvement HomeMend Market               CH         27
+ home_improvement Tool and Timber               CH          4
+ home_improvement    Atelier Fixe               FR          3
+        household        RoomKind               CH         30
+        household Parcel and Pine               CH         14
+
+CU0008  Priya Nair  (balanced)
+  background            Coordinates purchases for children and an older relative as well as her own household.
+  shopping_preferences  Reliable delivery windows, clearly sized children's items, and familiar pharmacies.
+  typical_spending      Groceries, family supplies, health purchases, and household orders across two cards.
+  travel_pattern        One family holiday in Europe each year.
+merchant_category      merchant_name merchant_country  purchases
+        groceries      Alpine Basket               CH         36
+        groceries Sunrise Provisions               CH          7
+        groceries    Lakeview Grocer               CH          5
+        groceries   Neighbour Pantry               CH          5
+        groceries       Rhine Pantry               DE          3
+      kids_family     Little Lantern               CH         27
+      kids_family      Growing Steps               CH          9
+
+CU0009  Mateo Silva  (careful)
+  background            Shares an apartment with two friends and manages a rotating household shopping list.
+  shopping_preferences  Shared essentials in normal pack sizes and receipts that are easy to split.
+  typical_spending      Groceries and household goods from recurring local merchants, plus shared meal deliveries.
+  travel_pattern        Occasional weekend travel.
+merchant_category      merchant_name merchant_country  purchases
+        groceries   Neighbour Pantry               CH         35
+        groceries Sunrise Provisions               CH          7
+        groceries    Lakeview Grocer               CH          5
+        groceries      Alpine Basket               CH          4
+        household    Parcel and Pine               CH         30
+        household           RoomKind               CH         10
+
+CU0010  Lea Baumann  (flexible)
+  background            Works independently as a designer and uses a separate card for business tools and travel.
+  shopping_preferences  Month-to-month software, clear invoices, and no bundled consulting services.
+  typical_spending      Software subscriptions, electronics, cafés, and occasional foreign-currency online services.
+  travel_pattern        Several European client trips each year.
+merchant_category    merchant_name merchant_country  purchases
+      electronics      PixelHarbor               CH          9
+      electronics       HarborByte               US          8
+      electronics Circuit and Pine               CH          7
+         software       WorkCanvas               NL         18
+         software      PlainLedger               CH         10
+
+CU0011  Daniel Schmid  (careful)
+  background            Prefers nearby physical shops and normally pays for everyday items in person.
+  shopping_preferences  Local products, simple receipts, and collection from a store rather than delivery.
+  typical_spending      Daytime in-store groceries, transport, clothing, and occasional restaurant purchases.
+  travel_pattern        Rarely travels abroad.
+merchant_category      merchant_name merchant_country  purchases
+           dining        Cedar Table               CH         29
+           dining         Noon Spoon               CH          6
+           dining    Basil and Board               CH          5
+        groceries   Neighbour Pantry               CH         29
+        groceries      Alpine Basket               CH         11
+        groceries    Lakeview Grocer               CH          9
+        groceries Sunrise Provisions               CH          7
+
+CU0013  Sami El-Amin  (balanced)
+  background            Repairs products where possible and chooses refill or second-life options for routine shopping.
+  shopping_preferences  Reusable, refurbished, or repairable items with transparent materials.
+  typical_spending      Groceries, repair services, second-life goods, public transport, and few impulse purchases.
+  travel_pattern        Mostly domestic travel.
+merchant_category      merchant_name merchant_country  purchases
+        groceries    Lakeview Grocer               CH         26
+        groceries Sunrise Provisions               CH          6
+        groceries      Alpine Basket               CH          4
+        groceries   Neighbour Pantry               CH          3
+sustainable_goods          GreenLoop               CH         13
+sustainable_goods   Repair and Reuse               CH         13
+
+CU0014  Hannah Weber  (flexible)
+  background            Attends concerts and festivals in summer but spends little on entertainment during the rest of the year.
+  shopping_preferences  Standard admission from clear ticket sellers; no VIP or resale upgrades.
+  typical_spending      Seasonal clusters of event purchases alongside normal groceries, transport, and dining.
+  travel_pattern        Domestic events and occasional German concerts.
+merchant_category      merchant_name merchant_country  purchases
+    entertainment         EventForge               CH         21
+    entertainment       ScreenGarden               CH         16
+        groceries   Neighbour Pantry               CH         23
+        groceries      Alpine Basket               CH          4
+        groceries    Lakeview Grocer               CH          3
+        groceries       Rhine Pantry               DE          3
+        groceries Sunrise Provisions               CH          1
+
+CU0015  Tomas Pereira  (planned_high_value)
+  background            Enjoys photography and saves for occasional equipment rather than buying accessories frequently.
+  shopping_preferences  Compatible camera equipment from specialist shops, with a return window and no financing.
+  typical_spending      Mostly modest daily spending interrupted by rare, planned high-value photography purchases.
+  travel_pattern        Occasional landscape photography trips.
+merchant_category      merchant_name merchant_country  purchases
+        groceries Sunrise Provisions               CH         21
+        groceries      Alpine Basket               CH          3
+        groceries    Lakeview Grocer               CH          3
+        groceries   Neighbour Pantry               CH          3
+      photography        SilverFrame               FR         29
+      photography          LensTrail               CH         18
+
+CU0016  Amina Diallo  (balanced)
+  background            Owns a dog and receives repeat deliveries of food and routine care products.
+  shopping_preferences  The usual pet-food formula, dependable delivery, and no unrequested supplement substitutions.
+  typical_spending      Recurring pet-care payments mixed with groceries, transport, health, and park-side cafés.
+  travel_pattern        Rarely travels without the dog.
+merchant_category      merchant_name merchant_country  purchases
+        groceries    Lakeview Grocer               CH         25
+        groceries   Neighbour Pantry               CH          6
+        groceries Sunrise Provisions               CH          5
+        groceries      Alpine Basket               CH          2
+         pet_care   Happy Trail Pets               CH         32
+         pet_care    Paw and Whisker               CH         16
+
+CU0017  Nils Andersson  (balanced)
+  background            Recently moved within Switzerland and is still establishing new local shopping routines.
+  shopping_preferences  Practical household basics and merchants that offer clear delivery dates.
+  typical_spending      A wider-than-usual variety of new grocery, household, transport, and home-improvement merchants.
+  travel_pattern        Occasional travel to France and Sweden.
+merchant_category      merchant_name merchant_country  purchases
+        groceries    Lakeview Grocer               CH         34
+        groceries   Neighbour Pantry               CH          4
+        groceries Sunrise Provisions               CH          4
+        groceries      Alpine Basket               CH          3
+        household           RoomKind               CH         22
+        household    Parcel and Pine               CH          7
+
+CU0018  Mei Chen  (careful)
+  background            Keeps personal daily spending separate from a shared household account.
+  shopping_preferences  Predictable grocery orders, clearly separated receipts, and household staples in normal quantities.
+  typical_spending      Frequent groceries and transport on one card, with shared household purchases on another account.
+  travel_pattern        A few European city trips each year.
+merchant_category      merchant_name merchant_country  purchases
+        groceries      Alpine Basket               CH         50
+        groceries    Lakeview Grocer               CH          7
+        groceries   Neighbour Pantry               CH          5
+        groceries       Rhine Pantry               DE          4
+        groceries Sunrise Provisions               CH          4
+        transport           MetroHop               CH         23
+        transport  LakeLine Mobility               CH          6
+        transport           RailNest               CH          6
+
+CU0020  Elif Kaya  (flexible)
+  background            Balances a busy schedule with frequent grocery and prepared-meal deliveries.
+  shopping_preferences  Reliable delivery estimates, saved food preferences, and no automatic membership enrolment.
+  typical_spending      Frequent small ecommerce and mobile-wallet payments, especially food delivery and groceries.
+  travel_pattern        Occasional holidays in southern Europe.
+merchant_category      merchant_name merchant_country  purchases
+    food_delivery           MealWing               CH         33
+    food_delivery   NightOwl Kitchen               CH         12
+        groceries Sunrise Provisions               CH         29
+        groceries   Neighbour Pantry               CH          6
+        groceries      Alpine Basket               CH          3
+        groceries    Lakeview Grocer               CH          2
+

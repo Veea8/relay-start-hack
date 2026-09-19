@@ -1,0 +1,166 @@
+--- Tables loaded ---
+purchase attempts 45, history rows 4701
+
+--- Scenario, instruction, customer profile and card ---
+SCEN0000  Connection check
+  instruction           Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.
+  customer              CU0001  Alex Meier  (Zurich region)
+  shopping_preferences  Practical groceries, children's essentials, and durable household products; avoids gift vouchers.
+  typical_spending      Regular supermarket visits, public transport, and occasional family meals, mostly during daytime.
+  budget and travel     careful. One or two short trips to neighbouring countries each year.
+  card                  CA0001  debit, purpose everyday, status active, virtual False
+  card switches         online True, international True
+  account               AC0001  debit, purpose daily_spending
+  issuer limits         per transaction CHF 1200, monthly CHF 4500
+
+SCEN0001  Household budget
+  instruction           Order our household groceries for delivery. Keep each order at or below CHF 120 including delivery, and keep the total across any seven days at or below CHF 300. Ask me when uncertain.
+  customer              CU0001  Alex Meier  (Zurich region)
+  shopping_preferences  Practical groceries, children's essentials, and durable household products; avoids gift vouchers.
+  typical_spending      Regular supermarket visits, public transport, and occasional family meals, mostly during daytime.
+  budget and travel     careful. One or two short trips to neighbouring countries each year.
+  card                  CA0001  debit, purpose everyday, status active, virtual False
+  card switches         online True, international True
+  account               AC0001  debit, purpose daily_spending
+  issuer limits         per transaction CHF 1200, monthly CHF 4500
+
+SCEN0002  Requested item and order terms
+  instruction           Replace my worn road-running shoes in size 43. Buy only from a specialist sports retailer, only if the order can be returned within 14 days or more, and pay no more than CHF 200. Ask me when uncertain.
+  customer              CU0006  Jonas Frei  (Lucerne region)
+  shopping_preferences  Technical sports equipment from specialist retailers and products with clear return terms.
+  typical_spending      Frequent modest sports purchases with occasional higher-value shoes or cycling equipment.
+  budget and travel     balanced. Weekend trips within Switzerland and Austria.
+  card                  CA0011  debit, purpose everyday, status active, virtual False
+  card switches         online True, international True
+  account               AC0009  debit, purpose daily_spending
+  issuer limits         per transaction CHF 1400, monthly CHF 5000
+
+SCEN0003  Session integrity
+  instruction           The agent may buy clothing for me, up to CHF 250 per order, from shops I have used before. Pause anything that looks like someone other than me is driving the session. Ask me when uncertain.
+  customer              CU0012  Giulia Rossi  (Lugano region)
+  shopping_preferences  Mobile receipts, fast checkout, and Italian or Swiss fashion retailers with returns.
+  typical_spending      High mobile-wallet usage for clothing, dining, groceries, and cross-border trips.
+  budget and travel     balanced. Regular short trips to Italy.
+  card                  CA0023  debit, purpose everyday, status active, virtual False
+  card switches         online True, international True
+  account               AC0018  debit, purpose daily_spending
+  issuer limits         per transaction CHF 1000, monthly CHF 4000
+
+SCEN0004  Manipulated agent
+  instruction           Buy the 27-inch monitor I chose, from a seller I have bought from before, for CHF 400 or less. Do not add anything I did not ask for. Ask me when uncertain.
+  customer              CU0019  Oliver Graf  (Basel region)
+  shopping_preferences  Known electronics sellers, clear warranty terms, and no marketplace add-ons.
+  typical_spending      Few online purchases, repeated familiar merchants, and mostly local in-store daily spending.
+  budget and travel     careful. Rarely travels abroad.
+  card                  CA0039  prepaid, purpose online, status active, virtual True
+  card switches         online True, international True
+  account               AC0030  prepaid, purpose online
+  issuer limits         per transaction CHF 900, monthly CHF 3200
+
+--- History per card of the four scenario customers ---
+customer_id card_id      card_purpose  is_scenario_card  history_rows  approved_rows  agent_rows            first_row             last_row
+     CU0001  CA0001          everyday              True           122            120          14 2025-09-14T11:14:46Z 2026-07-30T18:59:36Z
+     CU0001  CA0002 mobile_and_online             False           116            110          15 2025-09-02T13:20:45Z 2026-07-31T09:25:55Z
+     CU0006  CA0011          everyday              True           106            105          11 2025-09-04T10:39:08Z 2026-07-30T15:06:49Z
+     CU0006  CA0012 mobile_and_online             False           113            110          11 2025-09-07T18:21:11Z 2026-07-27T18:16:38Z
+     CU0012  CA0023          everyday              True           159            155          14 2025-09-06T16:13:29Z 2026-07-28T18:11:51Z
+     CU0012  CA0024            travel             False           106            104           7 2025-09-01T16:19:32Z 2026-07-23T15:53:11Z
+     CU0019  CA0038          everyday             False            82             74           4 2025-09-04T12:21:08Z 2026-07-28T12:41:45Z
+     CU0019  CA0039            online              True           132            129           6 2025-09-11T04:56:32Z 2026-07-21T11:07:51Z
+
+--- Channels used on each scenario card ---
+initiator_type         agent  human  merchant
+card_id channel                              
+CA0001  ecommerce         11     45         1
+        in_store           0     30         0
+        mobile_wallet      0     11         0
+        recurring          3     21         0
+CA0011  ecommerce          6     29         1
+        in_store           0     29         0
+        mobile_wallet      0     17         0
+        recurring          5     19         0
+CA0023  ecommerce         12     60         1
+        in_store           0     50         2
+        mobile_wallet      0     21         1
+        recurring          2     10         0
+CA0039  ecommerce          3     79         1
+        in_store           0     17         0
+        mobile_wallet      0      9         0
+        recurring          3     20         0
+
+--- Familiarity of every merchant that appears in a scenario ---
+scenario_id merchant_id    merchant_name merchant_category merchant_country  attempts_in_scenario  approved_on_this_card  approved_on_all_cards_of_customer  declined_on_this_card        last_approved                                                                    attempt_ids
+   SCEN0000      ME0001    Alpine Basket         groceries               CH                     1                     26                                 47                      1 2026-07-29T14:04:06Z                                                                         AU0001
+   SCEN0001      ME0001    Alpine Basket         groceries               CH                    10                     26                                 47                      1 2026-07-29T14:04:06Z AU0002, AU0003, AU0004, AU0005, AU0006, AU0007, AU0008, AU0009, AU0010, AU0011
+   SCEN0002      ME0028       TrailSpark    sporting_goods               CH                    10                     22                                 34                      0 2026-07-30T15:06:49Z AU0012, AU0013, AU0014, AU0015, AU0016, AU0017, AU0018, AU0019, AU0020, AU0021
+   SCEN0002      ME0029    Summit Thread    sporting_goods               CH                     1                      0                                  0                      0                  NaN                                                                         AU0023
+   SCEN0002      ME0053        GreenLoop sustainable_goods               CH                     1                      0                                  0                      0                  NaN                                                                         AU0022
+   SCEN0003      ME0025    Loom and Pine          clothing               CH                     4                     16                                 27                      0 2026-05-19T18:47:03Z                                                 AU0024, AU0026, AU0031, AU0034
+   SCEN0003      ME0027     Milano Weave          clothing               IT                     2                     15                                 30                      0 2026-07-18T19:42:38Z                                                                 AU0025, AU0032
+   SCEN0003      ME0026       RainThread          clothing               CH                     2                      0                                  0                      0                  NaN                                                                 AU0027, AU0033
+   SCEN0003      ME0058 Cobalt Coatworks          clothing               CH                     2                      0                                  0                      0                  NaN                                                                 AU0028, AU0030
+   SCEN0003      ME0060     Thames Weave          clothing               GB                     1                      0                                  0                      0                  NaN                                                                         AU0029
+   SCEN0004      ME0024       HarborByte       electronics               US                     1                     21                                 21                      2 2026-07-01T11:21:58Z                                                                         AU0038
+   SCEN0004      ME0022      PixelHarbor       electronics               CH                     8                      6                                  8                      0 2026-07-16T09:20:06Z                 AU0035, AU0036, AU0037, AU0040, AU0041, AU0042, AU0043, AU0045
+   SCEN0004      ME0023 Circuit and Pine       electronics               CH                     1                      0                                  2                      0                  NaN                                                                         AU0044
+   SCEN0004      ME0059     PixelHarbour       electronics               CH                     1                      0                                  0                      0                  NaN                                                                         AU0039
+
+--- Familiarity of every device that appears in a scenario ---
+scenario_id card_id customer_device_id  attempts_in_scenario                                                                                    attempt_ids  approved_on_this_device        last_approved
+   SCEN0000  CA0001         DVC-13A598                     1                                                                                         AU0001                       50 2026-07-29T14:04:06Z
+   SCEN0001  CA0001         DVC-13A598                    10                 AU0002, AU0003, AU0004, AU0005, AU0006, AU0007, AU0008, AU0009, AU0010, AU0011                       50 2026-07-29T14:04:06Z
+   SCEN0002  CA0011         DVC-89CB09                    12 AU0012, AU0013, AU0014, AU0015, AU0016, AU0017, AU0018, AU0019, AU0020, AU0021, AU0022, AU0023                       33 2026-07-23T07:07:21Z
+   SCEN0003  CA0023         DVC-4C0E9B                     5                                                         AU0026, AU0027, AU0028, AU0029, AU0030                        0                  NaN
+   SCEN0003  CA0023         DVC-B73E47                     6                                                 AU0024, AU0025, AU0031, AU0032, AU0033, AU0034                       51 2026-07-21T12:46:53Z
+   SCEN0004  CA0039         DVC-785971                    11         AU0035, AU0036, AU0037, AU0038, AU0039, AU0040, AU0041, AU0042, AU0043, AU0044, AU0045                       55 2026-07-21T11:07:51Z
+
+--- Distinct devices with approved purchases, per scenario card ---
+card_id customer_device_id  approved_on_this_device        last_approved
+ CA0001         DVC-13A598                       50 2026-07-29T14:04:06Z
+ CA0001         DVC-2EB3A8                       25 2026-07-14T12:43:44Z
+ CA0001         DVC-163DA3                       15 2026-07-24T07:23:23Z
+ CA0011         DVC-89CB09                       33 2026-07-23T07:07:21Z
+ CA0011         DVC-2B348A                       31 2026-07-27T04:34:51Z
+ CA0011         DVC-725FCF                       11 2026-04-27T11:46:24Z
+ CA0023         DVC-B73E47                       51 2026-07-21T12:46:53Z
+ CA0023         DVC-E54CDC                       35 2026-07-13T11:55:46Z
+ CA0023         DVC-31AF44                       15 2026-07-28T18:11:51Z
+ CA0039         DVC-785971                       55 2026-07-21T11:07:51Z
+ CA0039         DVC-9B2940                       40 2026-07-11T02:33:37Z
+ CA0039         DVC-160D1F                       16 2026-07-01T02:23:41Z
+
+--- Eight best known merchants per scenario card ---
+card_id merchant_id      merchant_name merchant_category merchant_country  approved_purchases  total_chf
+ CA0001      ME0001      Alpine Basket         groceries               CH                  26    1795.45
+ CA0001      ME0018  NorthTone Digital     subscriptions               GB                  11     120.45
+ CA0001      ME0051         WorkCanvas          software               NL                  11     156.20
+ CA0001      ME0007           MetroHop         transport               CH                   8     247.67
+ CA0001      ME0035      Growing Steps       kids_family               CH                   7     304.50
+ CA0001      ME0017     StoryArc Media     subscriptions               CH                   6     122.73
+ CA0001      ME0016   NightOwl Kitchen     food_delivery               CH                   5     172.94
+ CA0001      ME0034     Little Lantern       kids_family               CH                   5     328.63
+ CA0011      ME0017     StoryArc Media     subscriptions               CH                  28     443.73
+ CA0011      ME0028         TrailSpark    sporting_goods               CH                  22    2375.85
+ CA0011      ME0002   Neighbour Pantry         groceries               CH                   7     458.97
+ CA0011      ME0009    RoadPine Energy              fuel               CH                   6     593.11
+ CA0011      ME0030    AlpenWerk Sport    sporting_goods               AT                   6    1009.21
+ CA0011      ME0006           RailNest         transport               CH                   5     117.67
+ CA0011      ME0008  LakeLine Mobility         transport               CH                   5     144.57
+ CA0011      ME0012    Basil and Board            dining               CH                   4     287.87
+ CA0023      ME0017     StoryArc Media     subscriptions               CH                  17     507.09
+ CA0023      ME0025      Loom and Pine          clothing               CH                  16    2297.60
+ CA0023      ME0027       Milano Weave          clothing               IT                  15    1630.03
+ CA0023      ME0004 Sunrise Provisions         groceries               CH                  13     918.79
+ CA0023      ME0013         Noon Spoon            dining               CH                  10     701.92
+ CA0023      ME0011        Cedar Table            dining               CH                   9     553.69
+ CA0023      ME0012    Basil and Board            dining               CH                   9     388.23
+ CA0023      ME0008  LakeLine Mobility         transport               CH                   7     200.98
+ CA0039      ME0024         HarborByte       electronics               US                  21    2955.46
+ CA0039      ME0008  LakeLine Mobility         transport               CH                  11     354.64
+ CA0039      ME0017     StoryArc Media     subscriptions               CH                  11      74.41
+ CA0039      ME0051         WorkCanvas          software               NL                  11     297.00
+ CA0039      ME0019   CloudShelf Books             books               CH                  10     301.00
+ CA0039      ME0001      Alpine Basket         groceries               CH                   6     418.40
+ CA0039      ME0003    Lakeview Grocer         groceries               CH                   6     339.69
+ CA0039      ME0018  NorthTone Digital     subscriptions               GB                   6     113.61
+

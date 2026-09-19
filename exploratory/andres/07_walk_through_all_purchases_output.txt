@@ -1,0 +1,134 @@
+--- Verdict table ---
+45 purchases, each with one verdict
+
+--- All purchases with their verdict ---
+scenario_id  replay_order authorization_id   local_time  billing_amount_chf  order_limit_chf    merchant_name                                              items  verdict               problem_kind decision_on_own_facts decision_in_sequence
+   SCEN0000             1           AU0001 09 Aug 12.04               20.00               20    Alpine Basket                            Fresh produce selection ordinary                       none               approve              approve
+   SCEN0001             1           AU0002 10 Aug 11.12               44.50              120    Alpine Basket        Fresh produce selection, Breakfast supplies ordinary                       none               approve              approve
+   SCEN0001             2           AU0003 11 Aug 20.35              120.00              120    Alpine Basket     Weekly grocery basket, Fresh produce selection ordinary                       none               approve              approve
+   SCEN0001             3           AU0004 12 Aug 12.05              126.00              120    Alpine Basket              Weekly grocery basket, Pantry staples  unclear            small_overshoot               step_up              step_up
+   SCEN0001             4           AU0005 13 Aug 19.20               70.00              120    Alpine Basket            Fresh produce selection, Pantry staples ordinary                       none               approve              approve
+   SCEN0001             5           AU0006 13 Aug 19.26               65.00              120    Alpine Basket        Breakfast supplies, Fresh produce selection  unclear                split_order               step_up              step_up
+   SCEN0001             6           AU0007 14 Aug 13.40               62.00              120    Alpine Basket Fresh produce selection, Fragrance and beauty gift unwanted           off_purpose_item               step_up              step_up
+   SCEN0001             7           AU0008 15 Aug 11.30               65.50              120    Alpine Basket     Weekly grocery basket, Fresh produce selection ordinary                       none               approve              approve
+   SCEN0001             8           AU0009 16 Aug 18.10               24.00              120    Alpine Basket                                 Breakfast supplies  unclear            small_overshoot               step_up              step_up
+   SCEN0001             9           AU0010 18 Aug 12.00              138.00              120    Alpine Basket              Weekly grocery basket, Pantry staples unwanted           over_order_limit               decline              decline
+   SCEN0001            10           AU0011 19 Aug 11.45               88.00              120    Alpine Basket     Weekly grocery basket, Fresh produce selection ordinary                       none               approve              approve
+   SCEN0002             1           AU0012 11 Aug 12.15              165.00              200       TrailSpark                                 Road-running shoes ordinary                       none               approve              approve
+   SCEN0002             2           AU0013 11 Aug 16.40              155.00              200       TrailSpark                                 Road-running shoes unwanted            wrong_attribute               decline              decline
+   SCEN0002             3           AU0014 12 Aug 11.05              145.00              200       TrailSpark                                 Road-running shoes unwanted                order_terms               decline              decline
+   SCEN0002             4           AU0015 12 Aug 18.30              158.00              200       TrailSpark                                 Road-running shoes unwanted                order_terms               decline              decline
+   SCEN0002             5           AU0016 13 Aug 13.20              175.00              200       TrailSpark                                 Road-running shoes  unclear               missing_fact               step_up              step_up
+   SCEN0002             6           AU0017 14 Aug 12.00              180.00              200       TrailSpark                                Trail-running shoes unwanted                 wrong_item               decline              decline
+   SCEN0002             7           AU0018 14 Aug 17.45              194.00              200       TrailSpark       Road-running shoes, Extended protection plan unwanted          unrequested_addon               step_up              step_up
+   SCEN0002             8           AU0019 15 Aug 11.30              168.00              200       TrailSpark                                 Road-running shoes ordinary                       none               approve              step_up
+   SCEN0002             9           AU0020 16 Aug 15.10              120.00              200       TrailSpark                                     Cycling helmet unwanted                 wrong_item               decline              decline
+   SCEN0002            10           AU0021 17 Aug 13.00              215.00              200       TrailSpark                                 Road-running shoes  unclear            small_overshoot               step_up              step_up
+   SCEN0002            11           AU0022 18 Aug 16.25              189.00              200        GreenLoop                                 Road-running shoes unwanted        wrong_merchant_type               decline              decline
+   SCEN0002            12           AU0023 19 Aug 12.40              179.00              200    Summit Thread                                 Road-running shoes ordinary                       none               approve              step_up
+   SCEN0003             1           AU0024 14 Aug 20.20              145.00              250    Loom and Pine                                    Everyday jacket ordinary                       none               approve              approve
+   SCEN0003             2           AU0025 15 Aug 14.05              189.05              250     Milano Weave                            Seasonal clothing order ordinary                       none               approve              approve
+   SCEN0003             3           AU0026 17 Aug 21.40              165.00              250    Loom and Pine                                    Everyday jacket  unclear                 new_device               step_up              step_up
+   SCEN0003             4           AU0027 18 Aug 04.14              232.00              250       RainThread                         Everyday waterproof jacket unwanted            session_anomaly               decline              decline
+   SCEN0003             5           AU0028 18 Aug 04.17              245.00              250 Cobalt Coatworks                            Seasonal clothing order unwanted            session_anomaly               decline              decline
+   SCEN0003             6           AU0029 18 Aug 04.21              245.28              250     Thames Weave                                    Everyday jacket unwanted            session_anomaly               decline              decline
+   SCEN0003             7           AU0030 18 Aug 04.24              248.00              250 Cobalt Coatworks                         Everyday waterproof jacket unwanted            session_anomaly               decline              decline
+   SCEN0003             8           AU0031 19 Aug 19.30               95.00              250    Loom and Pine                                          Rain coat ordinary                       none               approve              approve
+   SCEN0003             9           AU0032 20 Aug 13.15              247.00              250     Milano Weave                            Seasonal clothing order ordinary                       none               approve              approve
+   SCEN0003            10           AU0033 21 Aug 18.00              138.00              250       RainThread                                          Rain coat  unclear        unfamiliar_merchant               step_up              step_up
+   SCEN0003            11           AU0034 22 Aug 17.20              268.00              250    Loom and Pine                                    Everyday jacket  unclear            small_overshoot               step_up              step_up
+   SCEN0004             1           AU0035 12 Aug 11.40              289.00              400      PixelHarbor                           27-inch computer monitor ordinary                       none               approve              approve
+   SCEN0004             2           AU0036 12 Aug 12.05              289.00              400      PixelHarbor                           27-inch computer monitor unwanted                  duplicate               step_up              step_up
+   SCEN0004             3           AU0037 12 Aug 16.05              520.00              400      PixelHarbor                           27-inch computer monitor unwanted           over_order_limit               decline              decline
+   SCEN0004             4           AU0038 13 Aug 18.20              391.50              400       HarborByte                           27-inch computer monitor ordinary                       none               approve              step_up
+   SCEN0004             5           AU0039 14 Aug 13.30              340.00              400     PixelHarbour                           27-inch computer monitor unwanted         lookalike_merchant               decline              decline
+   SCEN0004             6           AU0040 15 Aug 12.10              299.00              400      PixelHarbor                           27-inch computer monitor  unclear                  injection               step_up              step_up
+   SCEN0004             7           AU0041 16 Aug 11.15              459.00              400      PixelHarbor 27-inch computer monitor, Extended protection plan unwanted          unrequested_addon               decline              decline
+   SCEN0004             8           AU0042 17 Aug 17.00              350.00              400      PixelHarbor                           27-inch computer monitor ordinary                       none               approve              step_up
+   SCEN0004             9           AU0043 18 Aug 15.45              195.00              400      PixelHarbor                               Digital gift voucher unwanted                 wrong_item               decline              decline
+   SCEN0004            10           AU0044 19 Aug 12.25              310.00              400 Circuit and Pine                           27-inch computer monitor  unclear familiarity_card_or_person               step_up              step_up
+   SCEN0004            11           AU0045 20 Aug 19.05              399.90              400      PixelHarbor                           27-inch computer monitor ordinary                       none               approve              step_up
+
+--- Checks passed ---
+large overshoots are declines, small overshoots ask, ordinary purchases are approvals, unclear purchases ask, sequence only tightens
+
+--- Grocery orders under every combination of customer answers, outcome ---
+path                                                   order 5 approve, order 6 approve                        order 5 approve, order 6 decline                        order 5 decline, order 6 approve                        order 5 decline, order 6 decline
+replay_order billing_amount_chf                                                                                                                                                                                                                                
+1            44.5                                                               approve                                                 approve                                                 approve                                                 approve
+2            120.0                                                              approve                                                 approve                                                 approve                                                 approve
+3            126.0               asked, small overshoot of order limit, assumed decline  asked, small overshoot of order limit, assumed decline  asked, small overshoot of order limit, assumed decline  asked, small overshoot of order limit, assumed decline
+4            70.0                                                               approve                                                 approve                                                 approve                                                 approve
+5            65.0                                          asked, customer says approve                            asked, customer says approve                            asked, customer says decline                            asked, customer says decline
+6            62.0                                             decline, over 7-day limit                               decline, over 7-day limit                            asked, customer says approve                            asked, customer says decline
+7            65.5                                             decline, over 7-day limit                               decline, over 7-day limit                               decline, over 7-day limit                                                 approve
+8            24.0                asked, small overshoot of 7-day limit, assumed decline  asked, small overshoot of 7-day limit, assumed decline  asked, small overshoot of 7-day limit, assumed decline  asked, small overshoot of 7-day limit, assumed decline
+9            138.0                                            decline, over order limit                               decline, over order limit                               decline, over order limit                               decline, over order limit
+10           88.0                                                               approve                                                 approve                                                 approve                                                 approve
+
+--- The same, seven-day total of approved orders just before each order ---
+path                             order 5 approve, order 6 approve  order 5 approve, order 6 decline  order 5 decline, order 6 approve  order 5 decline, order 6 decline
+replay_order billing_amount_chf                                                                                                                                        
+1            44.5                                             0.0                               0.0                               0.0                               0.0
+2            120.0                                           44.5                              44.5                              44.5                              44.5
+3            126.0                                          164.5                             164.5                             164.5                             164.5
+4            70.0                                           164.5                             164.5                             164.5                             164.5
+5            65.0                                           234.5                             234.5                             234.5                             234.5
+6            62.0                                           299.5                             299.5                             234.5                             234.5
+7            65.5                                           299.5                             299.5                             296.5                             234.5
+8            24.0                                           299.5                             299.5                             296.5                             300.0
+9            138.0                                          255.0                             255.0                             252.0                             255.5
+10           88.0                                           135.0                             135.0                             132.0                             135.5
+
+--- Purchases per verdict and scenario ---
+verdict      ordinary  unclear  unwanted  All
+scenario_id                                  
+SCEN0000            1        0         0    1
+SCEN0001            5        3         2   10
+SCEN0002            3        2         7   12
+SCEN0003            4        3         4   11
+SCEN0004            4        2         5   11
+All                17       10        18   45
+
+--- Decisions when every purchase is judged on its own facts ---
+decision_on_own_facts
+approve    17
+decline    15
+step_up    13
+
+--- Decisions when one requested item means one item ---
+decision_in_sequence
+step_up    18
+decline    15
+approve    12
+
+--- Purchases where the two ways of judging disagree ---
+scenario_id  replay_order authorization_id  billing_amount_chf merchant_name decision_on_own_facts decision_in_sequence
+   SCEN0002             8           AU0019               168.0    TrailSpark               approve              step_up
+   SCEN0002            12           AU0023               179.0 Summit Thread               approve              step_up
+   SCEN0004             4           AU0038               391.5    HarborByte               approve              step_up
+   SCEN0004             8           AU0042               350.0   PixelHarbor               approve              step_up
+   SCEN0004            11           AU0045               399.9   PixelHarbor               approve              step_up
+
+--- What a plain order limit catches ---
+purchases that need a decline or a question: 28 of 45
+of those, over the order limit: 6
+problem_kind
+small_overshoot               4
+session_anomaly               4
+wrong_item                    3
+over_order_limit              2
+order_terms                   2
+unrequested_addon             2
+split_order                   1
+off_purpose_item              1
+wrong_attribute               1
+missing_fact                  1
+wrong_merchant_type           1
+new_device                    1
+unfamiliar_merchant           1
+duplicate                     1
+lookalike_merchant            1
+injection                     1
+familiarity_card_or_person    1
+

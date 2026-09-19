@@ -1,0 +1,109 @@
+--- Merchants loaded ---
+58 merchants, 58 distinct normalized names
+
+--- The twenty most alike merchant names ---
+merchant_id_a  merchant_name_a merchant_id_b   merchant_name_b  similarity shared_words  same_category merchant_country_a merchant_country_b
+       ME0022      PixelHarbor        ME0059      PixelHarbour       0.957                        True                 CH                 CH
+       ME0029    Summit Thread        ME0040        SummitStay       0.727                       False                 CH                 CH
+       ME0025    Loom and Pine        ME0055   Parcel and Pine       0.667         pine          False                 CH                 CH
+       ME0019 CloudShelf Books        ME0021 London Leaf Books       0.667        books           True                 CH                 GB
+       ME0023 Circuit and Pine        ME0055   Parcel and Pine       0.667         pine          False                 CH                 CH
+       ME0026       RainThread        ME0029     Summit Thread       0.636                       False                 CH                 CH
+       ME0002 Neighbour Pantry        ME0005      Rhine Pantry       0.615       pantry           True                 CH                 DE
+       ME0001    Alpine Basket        ME0006          RailNest       0.600                       False                 CH                 CH
+       ME0010      Alto Charge        ME0039        MotionCare       0.600                       False                 IT                 CH
+       ME0025    Loom and Pine        ME0032   Tool and Timber       0.583                       False                 CH                 CH
+       ME0022      PixelHarbor        ME0024        HarborByte       0.571                        True                 CH                 US
+       ME0023 Circuit and Pine        ME0025     Loom and Pine       0.560         pine          False                 CH                 CH
+       ME0009  RoadPine Energy        ME0025     Loom and Pine       0.560                       False                 CH                 CH
+       ME0005     Rhine Pantry        ME0009   RoadPine Energy       0.560                       False                 DE                 CH
+       ME0006         RailNest        ME0026        RainThread       0.556                       False                 CH                 CH
+       ME0006         RailNest        ME0028        TrailSpark       0.556                       False                 CH                 CH
+       ME0027     Milano Weave        ME0060      Thames Weave       0.545        weave           True                 IT                 GB
+       ME0024       HarborByte        ME0059      PixelHarbour       0.545                        True                 US                 CH
+       ME0006         RailNest        ME0037  Happy Trail Pets       0.545                       False                 CH                 CH
+       ME0001    Alpine Basket        ME0030   AlpenWerk Sport       0.538                       False                 CH                 AT
+
+--- How many name pairs fall into each similarity band ---
+similarity
+(-0.001, 0.5]    1622
+(0.5, 0.6]         24
+(0.6, 0.7]          5
+(0.7, 0.8]          1
+(0.8, 0.9]          0
+(0.9, 1.0]          1
+
+--- Merchant pairs that share a meaningful word ---
+ merchant_name_a   merchant_name_b shared_words  similarity  same_category
+CloudShelf Books London Leaf Books        books       0.667           True
+Neighbour Pantry      Rhine Pantry       pantry       0.615           True
+   Loom and Pine   Parcel and Pine         pine       0.667          False
+Circuit and Pine   Parcel and Pine         pine       0.667          False
+Circuit and Pine     Loom and Pine         pine       0.560          False
+    Milano Weave      Thames Weave        weave       0.545           True
+
+--- Merchants with no history at all, on any card ---
+merchant_id merchant_name merchant_category merchant_country merchant_city availability  scenario_purchases scenarios
+     ME0059  PixelHarbour       electronics               CH        Zurich       online                   1  SCEN0004
+
+--- The ten merchants with history on the fewest cards ---
+merchant_id      merchant_name merchant_category merchant_country  history_rows  distinct_cards           first_seen  scenario_purchases
+     ME0029      Summit Thread    sporting_goods               CH             3               2 2025-11-16T08:11:18Z                   1
+     ME0061 Cascade Outfitters    sporting_goods               US             4               2 2025-11-16T08:02:39Z                   0
+     ME0046          LensTrail       photography               CH            18               2 2025-09-07T15:54:00Z                   0
+     ME0047        SilverFrame       photography               FR            35               2 2025-09-06T09:18:48Z                   0
+     ME0033       Atelier Fixe  home_improvement               FR             6               3 2025-09-08T18:57:10Z                   0
+     ME0044    FlyNorth Europe            travel               NL            14               3 2025-12-12T09:25:01Z                   0
+     ME0036    Paw and Whisker          pet_care               CH            18               3 2025-09-02T18:47:39Z                   0
+     ME0037   Happy Trail Pets          pet_care               CH            37               3 2025-10-18T10:51:00Z                   0
+     ME0010        Alto Charge              fuel               IT            26               4 2025-10-04T09:35:43Z                   0
+     ME0045  EuroTrail Tickets            travel               DE            31               4 2025-09-06T16:02:51Z                   0
+
+--- The ten merchants with the highest share of declines ---
+merchant_id     merchant_name merchant_category merchant_country  history_rows  approved_rows  decline_share
+     ME0051        WorkCanvas          software               NL           187            138          0.262
+     ME0018 NorthTone Digital     subscriptions               GB           196            152          0.224
+     ME0024        HarborByte       electronics               US            37             30          0.189
+     ME0041    IsarNest Hotel             hotel               DE            54             44          0.185
+     ME0047       SilverFrame       photography               FR            35             29          0.171
+     ME0005      Rhine Pantry         groceries               DE            30             25          0.167
+     ME0027      Milano Weave          clothing               IT            54             45          0.167
+     ME0022       PixelHarbor       electronics               CH            36             31          0.139
+     ME0032   Tool and Timber  home_improvement               CH            24             21          0.125
+     ME0023  Circuit and Pine       electronics               CH            21             19          0.095
+
+--- PixelHarbor, PixelHarbour and the other merchants used only in scenarios ---
+merchant_id    merchant_name merchant_category  merchant_mcc merchant_country merchant_city     availability  history_rows  distinct_cards  scenario_purchases
+     ME0022      PixelHarbor       electronics          5732               CH        Zurich store_and_online            36               9                   8
+     ME0023 Circuit and Pine       electronics          5732               CH      Lausanne store_and_online            21               9                   1
+     ME0024       HarborByte       electronics          5732               US        Boston           online            37               4                   1
+     ME0026       RainThread          clothing          5651               CH        Lugano           online            72              31                   2
+     ME0027     Milano Weave          clothing          5651               IT         Milan store_and_online            54              10                   2
+     ME0029    Summit Thread    sporting_goods          5941               CH    Interlaken           online             3               2                   1
+     ME0053        GreenLoop sustainable_goods          5399               CH     Neuchatel store_and_online            33               7                   1
+     ME0058 Cobalt Coatworks          clothing          5651               CH          Chur store_and_online            76              32                   2
+     ME0059     PixelHarbour       electronics          5732               CH        Zurich           online             0               0                   1
+     ME0060     Thames Weave          clothing          5651               GB        London           online            13               6                   1
+
+--- Merchant numbers that do not exist ---
+[42, 43, 50]
+
+--- Foreign merchants and the currencies they billed in ---
+merchant_id      merchant_name merchant_country  CHF  EUR  GBP  USD
+     ME0005       Rhine Pantry               DE    6   24    0    0
+     ME0010        Alto Charge               IT    3   23    0    0
+     ME0014    Riverside Plate               DE    5   40    0    0
+     ME0018  NorthTone Digital               GB   10    0  186    0
+     ME0021  London Leaf Books               GB    2    0   14    0
+     ME0024         HarborByte               US    3    0    0   34
+     ME0027       Milano Weave               IT    6   48    0    0
+     ME0030    AlpenWerk Sport               AT    4   35    0    0
+     ME0033       Atelier Fixe               FR    0    6    0    0
+     ME0041     IsarNest Hotel               DE    6   48    0    0
+     ME0044    FlyNorth Europe               NL    4   10    0    0
+     ME0045  EuroTrail Tickets               DE    3   28    0    0
+     ME0047        SilverFrame               FR    4   31    0    0
+     ME0051         WorkCanvas               NL    2  185    0    0
+     ME0060       Thames Weave               GB    2    0   11    0
+     ME0061 Cascade Outfitters               US    1    0    0    3
+
