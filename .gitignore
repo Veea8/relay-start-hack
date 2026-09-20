@@ -51,9 +51,10 @@ CLAUDE.md
 Thumbs.db
 desktop.ini
 
-# Local decision store of the backend
+# Local decision store of the backend and the audit files of runs
 outputs/state/
 outputs/audit/offline/
+outputs/audit/run_*.jsonl
 
 # Logs of scripts/dev.sh
 outputs/logs/
