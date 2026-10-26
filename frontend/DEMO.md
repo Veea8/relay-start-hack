@@ -11,6 +11,8 @@
 
 ## Live judging run
 
+This section describes the procedure during the event. Viseca's sandbox server and the team key are no longer available, so only offline mode works now.
+
 Live runs share the team's 300-run quota, and only the latest completed run of each scenario counts. One designated operator coordinates every live run with the team.
 
 Before pressing **Start live run**, verify all of these:
